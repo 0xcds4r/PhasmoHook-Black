@@ -2,4 +2,4 @@
 Multi-functional cheat for Phasmophobia
 
 # 'PhasmoHook' folder put into 
-- C:\\\%USER%\\\*
+- C:\\\Users\\\%USER%\\\*
