@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{D9C6444E-08A1-493A-B02C-BA0CC69E2BED}</ProjectGuid>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <Keyword>ManagedCProj</Keyword>
+    <RootNamespace>Phasmophobia</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <EnableManagedPackageReferenceSupport>true</EnableManagedPackageReferenceSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CLRSupport>false</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseInteloneMKL>Parallel</UseInteloneMKL>
+    <BasePlatformToolset>v143</BasePlatformToolset>
+    <EnableASAN>false</EnableASAN>
+    <EnableUnitySupport>false</EnableUnitySupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>C:\Users\Alex\PhasmoHook\</OutDir>
+    <IntDir>..\Build\Temp\</IntDir>
+    <TargetName>jasda</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <EnableModules>true</EnableModules>
+      <BuildStlModules>true</BuildStlModules>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <UseUnicodeForAssemblerListing>false</UseUnicodeForAssemblerListing>
+      <CompileAs>Default</CompileAs>
+      <StringPooling>true</StringPooling>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <GuardEHContMetadata>false</GuardEHContMetadata>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="source\networking\Network.cpp" />
+    <ClCompile Include="source\game\Game.cpp" />
+    <ClCompile Include="source\networking\NetworkPlayer.cpp" />
+    <ClCompile Include="source\networking\PlayerPool.cpp" />
+    <ClCompile Include="source\networking\PhotonHelper.cpp" />
+    <ClCompile Include="source\game\Players.cpp" />
+    <ClCompile Include="source\game\Room.cpp" />
+    <ClCompile Include="source\game\Ghost.cpp" />
+    <ClCompile Include="library\imgui\Font.cpp" />
+    <ClCompile Include="library\imgui\imgui.cpp" />
+    <ClCompile Include="library\imgui\imgui_demo.cpp" />
+    <ClCompile Include="library\imgui\imgui_draw.cpp" />
+    <ClCompile Include="library\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="library\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="library\imgui\imgui_tables.cpp" />
+    <ClCompile Include="library\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="library\imgui\implot.cpp" />
+    <ClCompile Include="library\imgui\implot_demo.cpp" />
+    <ClCompile Include="library\imgui\implot_items.cpp" />
+    <ClCompile Include="library\kiero\kiero.cpp" />
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\game\hooks.cpp" />
+    <ClCompile Include="source\game\phasmo\phasmo_enums.h" />
+    <ClCompile Include="source\game\phasmo\phasmo_interfaces.h" />
+    <ClCompile Include="source\gui\gui.cpp" />
+    <ClCompile Include="source\gui\NotificationWrapper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\DummyDll\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Il2CppDummyDll">
+      <HintPath>..\DummyDll\Il2CppDummyDll.dll</HintPath>
+    </Reference>
+    <Reference Include="PhotonRealtime">
+      <HintPath>..\DummyDll\PhotonRealtime.dll</HintPath>
+    </Reference>
+    <Reference Include="PhotonUnityNetworking">
+      <HintPath>..\DummyDll\PhotonUnityNetworking.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>..\DummyDll\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\DummyDll\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\networking\Network.h" />
+    <ClInclude Include="source\game\Game.h" />
+    <ClInclude Include="library\UnityResolve.hpp" />
+    <ClInclude Include="source\networking\NetworkPlayer.h" />
+    <ClInclude Include="source\networking\PlayerPool.h" />
+    <ClInclude Include="source\networking\PhotonHelper.h" />
+    <ClInclude Include="source\game\Players.h" />
+    <ClInclude Include="source\game\Room.h" />
+    <ClInclude Include="source\game\Ghost.h" />
+    <ClInclude Include="library\Console.hpp" />
+    <ClInclude Include="library\D3D11Hook.h" />
+    <ClInclude Include="library\detours\detours.h" />
+    <ClInclude Include="library\detours\HookManager.h" />
+    <ClInclude Include="library\HotKey.hpp" />
+    <ClInclude Include="library\imgui-helper.h" />
+    <ClInclude Include="library\imgui\fa_solid_900.h" />
+    <ClInclude Include="library\imgui\Font.h" />
+    <ClInclude Include="library\imgui\font_awesome_5.h" />
+    <ClInclude Include="library\imgui\imconfig.h" />
+    <ClInclude Include="library\imgui\imgui.h" />
+    <ClInclude Include="library\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="library\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="library\imgui\imgui_internal.h" />
+    <ClInclude Include="library\imgui\imgui_notify.h" />
+    <ClInclude Include="library\imgui\implot.h" />
+    <ClInclude Include="library\imgui\implot_internal.h" />
+    <ClInclude Include="library\imgui\imstb_rectpack.h" />
+    <ClInclude Include="library\imgui\imstb_textedit.h" />
+    <ClInclude Include="library\imgui\imstb_truetype.h" />
+    <ClInclude Include="library\json.hpp" />
+    <ClInclude Include="library\kiero\kiero.h" />
+    <ClInclude Include="library\magic_enum\magic_enum.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_all.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_containers.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_flags.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_format.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_fuse.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_iostream.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_switch.hpp" />
+    <ClInclude Include="library\magic_enum\magic_enum_utility.hpp" />
+    <ClInclude Include="library\UnityResolve_OLD.hpp" />
+    <ClInclude Include="source\main.h" />
+    <ClInclude Include="source\game\phasmo\phasmo_structs.h" />
+    <ClInclude Include="source\gui\gui.h" />
+    <ClInclude Include="source\gui\NotificationWrapper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="library\detours\[x64]detours.lib" />
+    <Library Include="library\detours\[x86]detours.lib" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
