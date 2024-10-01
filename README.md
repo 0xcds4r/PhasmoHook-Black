@@ -1,5 +1,5 @@
 # PhasmoHook-Black
 Multi-functional cheat for Phasmophobia
 
-# PhasmoHook folder put into 
-- C:\\%USER%\\*
+# 'PhasmoHook' folder put into 
+- C:\\\%USER%\\\*
