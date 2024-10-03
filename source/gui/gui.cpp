@@ -59,16 +59,25 @@ ImVec4 HexToRGBA(const std::string& hex) {
     return ImVec4(static_cast<float>(r) / 255, static_cast<float>(g) / 255, static_cast<float>(b) / 255, static_cast<float>(a) / 255);
 }
 
-void DrawTextFromPosition(const char* text, II::Vector3 position) 
+void DrawTextFromPosition(const char* text, II::Vector3 position)
 {
     auto pMainCamera = II::Camera::GetMain();
     if (!pMainCamera) return;
+    if (position.x == 0.0f && position.y == 0.0f && position.z == 0.0f) return;
 
     auto point = pMainCamera->WorldToScreenPoint(position, UnityResolve::UnityType::Camera::Eye::Mono);
+
     if (point.z > 0) {
         point.y = ApplicationInfo::screenHeight - point.y;
+
         if (point.x >= 0 && point.x < ApplicationInfo::screenWidth && point.y >= 0 && point.y < ApplicationInfo::screenHeight) {
-            ImGui::GetBackgroundDrawList()->AddText({ point.x, point.y }, ImColor(255, 255, 255, 255), text);
+
+            ImVec2 textSize = ImGui::CalcTextSize(text);
+
+            float centeredX = point.x - textSize.x / 2.0f;
+            float centeredY = point.y - textSize.y / 2.0f;
+
+            ImGui::GetBackgroundDrawList()->AddText({ centeredX, centeredY }, ImColor(255, 255, 255, 255), text);
         }
     }
 }
@@ -279,6 +288,7 @@ auto CalculateGhostData() -> std::tuple<II::Vector3, II::Vector3, float, float> 
 
 void ManageEMFList() 
 {
+    std::vector<EMF*> toRemove{};
     if (!Ghost::gCurrentGhost) {
         return;
     }
@@ -287,19 +297,19 @@ void ManageEMFList()
         return;
     }
 
-    std::vector<EMF*> toRemove{};
     if (!Ghost::emfData.empty()) {
         auto now = std::chrono::steady_clock::now();
 
         for (const auto& [emf, timestamp] : Ghost::emfData) {
             if (emf) {
+                auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(now - timestamp).count();
+
                 FOR_EACH_COMPONENT(emf, II::Transform, "UnityEngine.CoreModule.dll", "Transform", pTransform) {
                     if (pTransform) {
-                        DrawTextFromPosition("EMF", pTransform->GetPosition());
+                        const char* str = std::format("EMF ({})", 20 - seconds_passed).c_str();
+                        DrawTextFromPosition(str, pTransform->GetPosition());
                     }
                 }
-
-                auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(now - timestamp).count();
 
                 if (seconds_passed >= 20) {
                     toRemove.push_back(emf);
@@ -320,11 +330,11 @@ void ManageEMFList()
         toRemove.clear();
     }
 }
-
+extern DNAEvidence* pBone;
 void ManageBoneEv() {
-    if (Ghost::gCurrentGhost && Gui::pBone) 
+    if (Ghost::gCurrentGhost && pBone) 
     {
-        auto pBoneObj = Gui::pBone->GetGameObject();
+        auto pBoneObj = pBone->GetGameObject();
         if (pBoneObj) {
             auto pBoneTransform = pBoneObj->GetTransform();
             if (pBoneTransform) {
@@ -455,17 +465,63 @@ void Gui::DoDrawFeatures()
     {
         if (Ghost::GetInfo(Ghost::gCurrentGhost) && !ApplicationInfo::bIsInLobby)
         {
-            ImGui::Begin("ghostInfo", nullptr);
-            //const char* roomName = Room::GetRoomName(GetGhostFavouriteRoom());
-            const char* ghostType = Ghost::GetTypeName();
-            const char* ghostState = Ghost::GetStateName();
-            //const char* playerRoomName = Players::GetCurrentRoomName(Players::GetLocalPlayer());
+            auto DrawOutlinedText = [](const char* label, const char* text, ImVec2 position, ImU32 outlineColor = ImColor(0, 0, 0, 255), ImU32 textColor = ImColor(255, 255, 255, 255)) {
+                auto drawList = ImGui::GetWindowDrawList();
 
-            // Prepare the strings to render
-            //ImGui::Text("Ghost fav. room: %s", roomName);
-            ImGui::Text("Ghost type: %s", ghostType);
-            ImGui::Text("Ghost state: %s", ghostState);
-            //ImGui::Text("Your: %s", playerRoomName);
+                ImVec2 positions[] = {
+                    { position.x - 1, position.y },     // Left
+                    { position.x + 1, position.y },     // Right
+                    { position.x, position.y - 1 },     // Up
+                    { position.x, position.y + 1 },     // Down
+                    { position.x - 1, position.y - 1 }, // Top-left diagonal
+                    { position.x + 1, position.y - 1 }, // Top-right diagonal
+                    { position.x - 1, position.y + 1 }, // Bottom-left diagonal
+                    { position.x + 1, position.y + 1 }, // Bottom-right diagonal
+                };
+
+                // Draw outline for the label
+                for (const auto& outlinePos : positions) {
+                    drawList->AddText(outlinePos, outlineColor, label);
+                }
+
+                drawList->AddText(position, textColor, label);
+
+                ImVec2 textPos = { position.x + 100, position.y };
+
+                for (const auto& outlinePos : positions) {
+                    drawList->AddText({ outlinePos.x + 100, outlinePos.y }, outlineColor, text);
+                }
+
+                drawList->AddText(textPos, textColor, text);
+                };
+
+            ImGui::SetNextWindowSize(ImVec2(256, 256), ImGuiCond_Once);
+
+            ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
+
+            ImGui::Begin("#ghostInformation", nullptr, windowFlags);
+           
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+
+            DrawOutlinedText("Ghost type: ", Ghost::GetTypeName(), pos);
+
+            pos.y += ImGui::GetTextLineHeight();
+
+            DrawOutlinedText("Ghost state: ", Ghost::GetStateName(), pos);
+
+            pos.y += ImGui::GetTextLineHeight();
+
+            LevelRoom* pRoom = GetGhostFavouriteRoom();
+            DrawOutlinedText("Ghost room: ", pRoom ? Room::GetRoomName(pRoom) : "", pos);
+
+            pos.y += ImGui::GetTextLineHeight();
+
+            DrawOutlinedText("Temperature: ", pRoom ? std::format("{}", Room::GetRoomTemperature(pRoom)).c_str() : "None", pos);
+
+            pos.y += ImGui::GetTextLineHeight();
+
+            DrawOutlinedText("Ghost name: ", Ghost::GetName(), pos);
+
             ImGui::End();
         }
     }
@@ -499,7 +555,7 @@ void Gui::RenderMainContent()
         default: {
             ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "About");
             ImGui::Separator();
-            ImGui::Text("PHASMOHOOK - RELEASE - 1.0.0 - BLACK\nThanks for download\nBy 0xcds4r");
+            ImGui::Text("PHASMOHOOK - RELEASE - 1.0.1 - BLACK\nThanks for download\nBy 0xcds4r");
             break;
         }
 
@@ -586,8 +642,8 @@ void Gui::RenderMainContent()
                 ImGui::Text("Gender: %s", Ghost::GetSex());
                 ImGui::Text("Age: %d", Ghost::GetAge());
                 
-                const char* roomName = Room::GetRoomName(GetGhostFavouriteRoom());
-                ImGui::Text("Fav. Room: %s", roomName);
+                LevelRoom* pRoom = GetGhostFavouriteRoom();
+                ImGui::Text("Fav. Room: %s", pRoom ? Room::GetRoomName(pRoom) : "");
             }
             
             break;

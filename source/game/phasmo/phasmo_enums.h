@@ -189,7 +189,7 @@ enum class Proof : std::int32_t {
     DotsProjector
 };
 
-enum class EMFGhostAction {
+enum class EMFGhostActionEv {
     GhostInteraction,   // (2) Ghost Interaction
     GhostThrowing,      // (3) Ghost Throwing
     GhostAppeared,      // (4) Ghost Appeared

@@ -5,15 +5,14 @@ void Ghost::Init()
 {
     Log("Ghost::Init");
 
-    Ghost::Reset();
-
     setupHook("Assembly-CSharp.dll", "GhostAI", "Awake", HAwake);
     setupHook("Assembly-CSharp.dll", "GhostAI", "Update", HUpdate);
 }
 
 void Ghost::Reset() {
     Log("Ghost::Reset");
-    Ghost::gCurrentGhost = nullptr;
+    
+    gCurrentGhost = nullptr;
     Ghost::emfData.clear();
 }
 
@@ -25,6 +24,16 @@ const char* GetGhostTypeString(GhostType type) {
 const char* GetGhostStateString(GhostState state) {
     auto it = GhostStateNames.find(state);
     return (it != GhostStateNames.end()) ? it->second : "Unknown";
+}
+
+const char* GetEMFGhostActionNames(EMFGhostActionEv action) {
+    auto it = EMFGhostActionNames.find(action);
+    return (it != EMFGhostActionNames.end()) ? it->second : "Unknown";
+}
+
+const char* GetEMFGhostActionTypeNames(EMFGhostActionType action) {
+    auto it = EMFGhostActionTypeNames.find(action);
+    return (it != EMFGhostActionTypeNames.end()) ? it->second : "Unknown";
 }
 
 GhostState Ghost::GetState(GhostAI* _this) {
@@ -118,20 +127,11 @@ const char* Ghost::GetStateName() {
 inline auto UNITY_CALLING_CONVENTION Ghost::HAwake(GhostAI* _this) -> void
 {
     H::Fcall(HAwake, _this);
-    Ghost::Reset();
     Ghost::gCurrentGhost = _this;
     ApplicationInfo::bIsInLobby = false;
 }
 
 inline auto UNITY_CALLING_CONVENTION Ghost::HUpdate(GhostAI* _this) -> void
 {
-    if (!Ghost::gCurrentGhost) {
-        return;
-    }
-
-    if (_this != Ghost::gCurrentGhost) {
-        return;
-    }
-
     H::Fcall(HUpdate, _this);
 }

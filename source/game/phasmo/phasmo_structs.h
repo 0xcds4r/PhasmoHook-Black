@@ -303,7 +303,7 @@ public:
 class EMF : public II::MonoBehaviour {
 public:
     char padding[0x30]; // Skip to offset 0x30, which is where ghostAction starts
-    EMFGhostAction ghostAction;
+    EMFGhostActionEv ghostAction;
     EMFGhostActionType ghostActionType;
     float placeholder_3;
 };

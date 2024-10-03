@@ -47,7 +47,6 @@ public:
     void RenderSideBar();
 
     void RenderMainContent();
-    static inline DNAEvidence* pBone = nullptr;
 protected:
     uint8_t selectedPage = -1;
     

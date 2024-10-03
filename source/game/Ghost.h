@@ -53,6 +53,27 @@ const std::map<GhostState, const char*> GhostStateNames = {
 	{GhostState::Salt, "Salt"}
 };
 
+const std::map<EMFGhostActionEv, const char*> EMFGhostActionNames = {
+	{EMFGhostActionEv::GhostInteraction, "Ghost Interaction"},
+	{EMFGhostActionEv::GhostThrowing, "Ghost Throwing"},
+	{EMFGhostActionEv::GhostAppeared, "Ghost Appeared"},
+	{EMFGhostActionEv::GhostEvidence, "Ghost Evidence - DO NOT USE"}
+};
+
+const std::map<EMFGhostActionType, const char*> EMFGhostActionTypeNames = {
+	{EMFGhostActionType::interaction, "interaction"},
+	{EMFGhostActionType::objectMoved, "objectMoved"},
+	{EMFGhostActionType::windowKnock, "windowKnock"},
+	{EMFGhostActionType::midGhostWrite, "midGhostWrite"},
+	{EMFGhostActionType::breakerSwitch, "breakerSwitch"},
+	{EMFGhostActionType::planchette, "planchette"},
+	{EMFGhostActionType::rockingChair, "rockingChair"},
+	{EMFGhostActionType::generalIntEffect, "generalIntEffect"},
+	{EMFGhostActionType::lightSwitched, "lightSwitched"},
+	{EMFGhostActionType::soundEffect, "soundEffect"},
+	{EMFGhostActionType::crucifixFire, "crucifixFire"}
+};
+
 class Ghost
 {
 public:

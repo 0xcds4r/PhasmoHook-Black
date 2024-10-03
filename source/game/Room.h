@@ -11,6 +11,7 @@ public:
 	inline static std::vector<LevelRoom*> gRoomList{};
 	static LevelRoom* getRoomById(int id);
 	static const char* GetRoomName(LevelRoom* _this);
+	static float GetRoomTemperature(LevelRoom* _this);
 	static const char* GetRoomNameById(int id);
 
 private:
