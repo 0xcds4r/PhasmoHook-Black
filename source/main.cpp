@@ -1,4 +1,6 @@
 #include "main.h"
+#include <memory>
+#include <filesystem>
 
 #pragma comment(lib, "DbgHelp.lib")
 #include <dbghelp.h>
@@ -7,271 +9,359 @@ Gui gui;
 
 char ProcessInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	return gui.ProcessInput(hWnd, msg, wParam, lParam);
+    return gui.ProcessInput(hWnd, msg, wParam, lParam);
 }
 
-const char* getStoragePath() {
-	const char* homeDir = std::getenv("USERPROFILE");
-	const char* path = "\\PhasmoHook\\";
-	std::string desktopPath = std::string(homeDir) + std::string(path);
-	return desktopPath.c_str();
-}
+class PhasmoHook {
+private:
+    static constexpr const char* CONFIG_FILE_NAME = "phasmohook-cfg.json";
+    static constexpr const wchar_t* GAME_PROCESS_NAME = L"Phasmophobia.exe";
 
-void UpdateResolutionScale()
-{
-	auto screenWidth = ApplicationInfo::screenWidth;
-	auto screenHeight = ApplicationInfo::screenHeight;
+    mutable std::filesystem::path storagePath;
 
-	if (screenWidth <= 0.0f || screenHeight <= 0.0f)
-	{
-		return;
-	}
+    static PhasmoHook* currentInstance;
 
-	ApplicationInfo::screenScaleX = 1.0f / screenWidth;
-	ApplicationInfo::screenScaleY = 1.0f / screenHeight;
-}
+    static char WndProcWrapper(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+        if (currentInstance) {
+            return currentInstance->processGUIInput(hWnd, msg, wParam, lParam);
+        }
+        return 0;
+    }
 
-void FeatureUpdateLoop()
-{
-	gui.updateLoop(std::chrono::high_resolution_clock::now());
+public:
+    PhasmoHook() {
+        SetConsoleOutputCP(CP_UTF8);
+        SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+        currentInstance = this;
+    }
 
-	tagRECT rect;
-	while (true) {
-		GetClientRect(dx_hook::Hk11::GetHwnd(), &rect);
-		ApplicationInfo::screenWidth = static_cast<float>(rect.right - rect.left);
-		ApplicationInfo::screenHeight = static_cast<float>(rect.bottom - rect.top);
-		UpdateResolutionScale();
-		Sleep(100);
-	}
-}
+    ~PhasmoHook() {
+        if (currentInstance == this) {
+            currentInstance = nullptr;
+        }
+    }
 
-bool InitializeImGui() {
-	if (!ApplicationInfo::bGUIInited) 
-	{
-		Log("Phasmohook initializing gui..");
+    std::filesystem::path getStoragePath() const {
+        if (storagePath.empty()) {
+            if (const char* homeDir = std::getenv("USERPROFILE")) {
+                storagePath = std::filesystem::path(homeDir) / "PhasmoHook";
+            }
+        }
+        return storagePath;
+    }
 
-		UnityResolve::ThreadAttach();
+    static void CreateMiniDump(EXCEPTION_POINTERS* pep, const std::filesystem::path& storagePath) {
+        std::filesystem::path dumpPath = storagePath / "crashdump.txt";
 
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImPlot::CreateContext();
+        HANDLE hFile = CreateFileW(
+            dumpPath.wstring().c_str(),
+            GENERIC_WRITE,
+            0,
+            nullptr,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr
+        );
 
-		auto& io = ImGui::GetIO();
-		//const char* homeDir = std::getenv("USERPROFILE");
+        if (hFile != INVALID_HANDLE_VALUE) {
+            DWORD dwWritten;
+            std::string header = "Exception Information:\n-------------------------\n";
+            WriteFile(hFile, header.c_str(), header.size(), &dwWritten, nullptr);
 
-		io.IniFilename = nullptr;
+            std::string exceptionCode = "Exception Code: " + std::to_string(pep->ExceptionRecord->ExceptionCode) + "\n";
+            WriteFile(hFile, exceptionCode.c_str(), exceptionCode.size(), &dwWritten, nullptr);
 
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad | ImGuiConfigFlags_NavEnableKeyboard;
-		//io.Fonts->ConfigData.Data->FontDataOwnedByAtlas = false;
-		io.Fonts->AddFontFromMemoryTTF(Font::getallfont(), 2362740, 15, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+            CloseHandle(hFile);
+        }
+    }
 
-		ImGui_ImplWin32_Init(dx_hook::Hk11::GetHwnd());
-		ImGui_ImplDX11_Init(dx_hook::Hk11::GetDevice(), dx_hook::Hk11::GetContext());
+    static LONG WINAPI MyUnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionInfo) {
+        PhasmoHook phasmo;
+        std::cout << "Unhandled exception occurred! Creating a minidump...\n";
+        CreateMiniDump(pExceptionInfo, phasmo.getStoragePath());
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
 
-		dx_hook::Hk11::SetWndProc([](HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> char {
-			return ProcessInput(hWnd, msg, wParam, lParam);
-		});
+    char processGUIInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+        return gui.ProcessInput(hWnd, msg, wParam, lParam);
+    }
 
-		gui.ApplyStyles();
-		ApplicationInfo::bGUIInited = true;
-	}
-	return ApplicationInfo::bGUIInited;
-}
+    void updateResolutionScale(float width, float height) {
+        if (width > 0.0f && height > 0.0f) {
+            ApplicationInfo::screenWidth = width;
+            ApplicationInfo::screenHeight = height;
+            ApplicationInfo::screenScaleX = 1.0f / width;
+            ApplicationInfo::screenScaleY = 1.0f / height;
+        }
+    }
 
-void RenderImGui() {
-	if (!InitializeImGui()) {
-		return;
-	}
+    void featureUpdateLoop() {
+        gui.updateLoop(std::chrono::high_resolution_clock::now());
+        tagRECT rect;
+        while (true) {
+            if (GetClientRect(dx_hook::Hk11::GetHwnd(), &rect)) {
+                updateResolutionScale(
+                    static_cast<float>(rect.right - rect.left),
+                    static_cast<float>(rect.bottom - rect.top)
+                );
+            }
+            Sleep(100);
+        }
+    }
 
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
 
-	gui.RenderMainWindow();
-	gui.DoDrawFeatures();
+    bool initializeImGui() {
+        if (ApplicationInfo::bGUIInited) return true;
 
-	ImGui::EndFrame();
-	ImGui::Render();
-	dx_hook::Hk11::GetContext()->OMSetRenderTargets(1, dx_hook::Hk11::GetTargetView(), nullptr);
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-}
+        Log("Phasmohook initializing gui..");
+        UnityResolve::ThreadAttach();
 
-void InitConfig() 
-{
-	Log("Initializing PhasmoHook Configs..");
+        IMGUI_CHECKVERSION();
+        if (!ImGui::CreateContext() || !ImPlot::CreateContext()) {
+            return false;
+        }
 
-	std::string configPath = std::string(getStoragePath()) + std::string(CONFIG_FILE_NAME);
-	
-	Log("Storage path: " + std::string(getStoragePath()));
+        auto& io = ImGui::GetIO();
+        io.IniFilename = nullptr;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad | ImGuiConfigFlags_NavEnableKeyboard;
 
-	nlohmann::json jsonObj;
-	jsonObj["version"] = "1.0.0";
-	jsonObj["version_code"] = 101;
-	jsonObj["version_tag"] = "black";
+        io.Fonts->AddFontFromMemoryTTF(Font::getallfont(), 2362740, 15, nullptr,
+            io.Fonts->GetGlyphRangesCyrillic());
 
-	std::ofstream file(configPath);
-	if (file.is_open()) {
-		file << jsonObj.dump(4);
-		file.close();
-	}
-}
+        if (!ImGui_ImplWin32_Init(dx_hook::Hk11::GetHwnd()) ||
+            !ImGui_ImplDX11_Init(dx_hook::Hk11::GetDevice(), dx_hook::Hk11::GetContext())) {
+            return false;
+        }
+
+        dx_hook::Hk11::SetWndProc([](HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> char {
+            return ProcessInput(hWnd, msg, wParam, lParam);
+        });
+
+        gui.ApplyStyles();
+        ApplicationInfo::bGUIInited = true;
+        return true;
+    }
+
+    void initConfig() {
+        Log("Initializing PhasmoHook Configs..");
+        auto configPath = getStoragePath() / CONFIG_FILE_NAME;
+
+        try {
+            nlohmann::json jsonObj{
+                {"version", "1.2"},
+                {"version_code", 120},
+                {"version_tag", "black"}
+            };
+
+            std::ofstream file(configPath, std::ios::out | std::ios::trunc);
+            if (file.is_open()) {
+                file << jsonObj.dump(4);
+            }
+        }
+        catch (const std::exception& e) {
+            Log(std::string("Config init failed: ") + e.what());
+        }
+    }
+
+    void Log(const std::string_view message) {
+        auto logPath = getStoragePath() / "phasmohook.log";
+
+        HANDLE hFile = CreateFileW(
+            logPath.wstring().c_str(),
+            FILE_APPEND_DATA,
+            FILE_SHARE_READ,
+            nullptr,
+            OPEN_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr
+        );
+
+        if (hFile != INVALID_HANDLE_VALUE) {
+            SYSTEMTIME st;
+            GetSystemTime(&st);
+
+            char buffer[2048];
+            int len = sprintf_s(buffer, sizeof(buffer),
+                "%04d-%02d-%02d %02d:%02d:%02d: %.*s\n",
+                st.wYear, st.wMonth, st.wDay,
+                st.wHour, st.wMinute, st.wSecond,
+                static_cast<int>(message.size()), message.data()
+            );
+
+            DWORD dwWritten;
+            WriteFile(hFile, buffer, len, &dwWritten, nullptr);
+            CloseHandle(hFile);
+
+            std::cout << message << std::endl;
+        }
+    }
+
+    Gui& getGui() { return gui; }
+
+    static const wchar_t* GetGameProcessName() { return GAME_PROCESS_NAME; }
+};
+
+PhasmoHook* PhasmoHook::currentInstance = nullptr;
+PhasmoHook phasmo;
 
 void InjectHooks();
-void InitPlugin() {
-	Log("Initializing PhasmoHook by 0xcds4r..");
-	
-	InitConfig();
 
-	Network::Init();
-
-	UnityResolve::Init(GetModuleHandleA("GameAssembly.dll"), UnityResolve::Mode::Il2Cpp);
-		
-	InjectHooks();
+void DebugClass(const char* dll, const char* className) {
+    UnityResolve::Class* cls = UnityResolve::Get(dll)->Get(className);
+    if (cls) {
+        std::cout << "Fields in " << className << ":" << std::endl;
+        for (const auto* field : cls->fields) {
+            std::cout << "Field: " << field->name << ", Offset: 0x" << std::hex << field->offset << std::endl;
+        }
+        std::cout << "Methods in " << className << ":" << std::endl;
+        for (const auto* method : cls->methods) {
+            std::cout << "Method: " << method->name << std::endl;
+        }
+    }
+    else {
+        std::cout << "Failed to find " << className << std::endl;
+    }
 }
 
-std::wstring stringToWString(const std::string& str) {
-	int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
-	std::wstring wstrTo(size_needed, 0);
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
-	return wstrTo;
+// universal
+bool SetGamma(float gamma) {
+    HDC hDC = GetDC(NULL); 
+    if (!hDC) {
+        std::cerr << "Failed to get device context" << std::endl;
+        return false;
+    }
+
+    WORD gammaRamp[3][256];
+
+    for (int i = 0; i < 256; i++) {
+        float normalized = i / 255.0f;
+        float adjusted = powf(normalized, 1.0f / gamma);
+        WORD value = static_cast<WORD>(adjusted * 65535.0f);
+
+        if (value > 65535) value = 65535;
+        if (value < 0) value = 0;
+
+        gammaRamp[0][i] = value;
+        gammaRamp[1][i] = value;
+        gammaRamp[2][i] = value; 
+    }
+
+    BOOL result = SetDeviceGammaRamp(hDC, gammaRamp);
+    if (!result) {
+        std::cerr << "Failed to set gamma ramp" << std::endl;
+        ReleaseDC(NULL, hDC);
+        return false;
+    }
+
+    ReleaseDC(NULL, hDC);
+    return true;
 }
 
-void CreateTextDump(EXCEPTION_POINTERS* pep)
-{
-	// Open file to save the dump
-	std::string configPath = std::string(getStoragePath()) + std::string("crashdump.txt");
+void ResetGamma() {
+    HDC hDC = GetDC(NULL);
+    if (!hDC) {
+        std::cerr << "Failed to get device context for reset" << std::endl;
+        return;
+    }
 
-	HANDLE hFile = CreateFile((LPCWSTR)stringToWString(configPath).c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    WORD gammaRamp[3][256];
+    for (int i = 0; i < 256; i++) {
+        WORD value = i * 257;
+        gammaRamp[0][i] = value;
+        gammaRamp[1][i] = value;
+        gammaRamp[2][i] = value;
+    }
 
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		// Write the exception information to the file
-		DWORD dwWritten;
-		WriteFile(hFile, "Exception Information:\n", 20, &dwWritten, NULL);
-		WriteFile(hFile, "-------------------------\n", 20, &dwWritten, NULL);
-		WriteFile(hFile, "Exception Code: ", 15, &dwWritten, NULL);
-		WriteFile(hFile, std::to_wstring(pep->ExceptionRecord->ExceptionCode).c_str(), 10, &dwWritten, NULL);
-		WriteFile(hFile, "\n", 1, &dwWritten, NULL);
+    if (!SetDeviceGammaRamp(hDC, gammaRamp)) {
+        std::cerr << "Failed to reset gamma ramp" << std::endl;
+    }
 
-		// Write the stack trace to the file
-		WriteFile(hFile, "Stack Trace:\n", 12, &dwWritten, NULL);
-		WriteFile(hFile, "-------------\n", 12, &dwWritten, NULL);
-		CONTEXT context;
-		context.ContextFlags = CONTEXT_FULL;
-		GetThreadContext(GetCurrentThread(), &context);
-		for (int i = 0; i < 10; i++)
-		{
-			WriteFile(hFile, std::to_wstring(context.Rip).c_str(), 10, &dwWritten, NULL);
-			WriteFile(hFile, "\n", 1, &dwWritten, NULL);
-			context.Rip = *(DWORD64*)context.Rsp;
-			context.Rsp += 8;
-		}
-
-		CloseHandle(hFile);
-	}
+    ReleaseDC(NULL, hDC);
 }
 
-void Log(const std::string& message)
-{
-	std::string logPath = std::string(getStoragePath()) + std::string("phasmohook.log");
-	HANDLE hFile = CreateFile((LPCWSTR)stringToWString(logPath).c_str(), GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+//void printLightNames() 
+//{
+//    auto* mainCamera = II::Camera::GetMain();
+//    if (mainCamera) {
+//        auto lights = II::Light::FindAll();
+//        if (!lights.empty()) {
+//            for (auto* light : lights) {
+//                if (light) {
+//                    auto* obj = light->GetGameObject();
+//                    if (obj) {
+//                        std::string stringObjName = std::format("{}", obj->GetName()->ToString());
+//                        phasmo.Log(stringObjName);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//void printAllColliderNames() {
+//    auto* mainCamera = II::Camera::GetMain();
+//    if (!mainCamera) return;
+//    auto colliders = UnityResolve::UnityType::Collider::FindAll();
+//    if (!colliders.empty()) {
+//        std::cout << "Colliders found in the scene:" << std::endl;
+//        for (auto* collider : colliders) {
+//            if (collider) {
+//                auto* go = collider->GetGameObject();
+//                if (go) {
+//                    std::string stringObjName = std::format("{}", go->GetName()->ToString());
+//                    std::cout << " - " << stringObjName << std::endl;
+//                }
+//                else {
+//                    std::cout << " - (No GameObject attached)" << std::endl;
+//                }
+//            }
+//        }
+//    }
+//    else {
+//        //std::cerr << "No colliders found in the scene" << std::endl;
+//    }
+//}
 
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		SetFilePointer(hFile, 0, NULL, FILE_END);
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID) {
+    if (reason != DLL_PROCESS_ATTACH) return TRUE;
 
-		DWORD dwWritten;
-		SYSTEMTIME st;
-		GetSystemTime(&st);
-		char buffer[2048 + 1];
-		sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d: %s\n", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, message.c_str());
-		WriteFile(hFile, buffer, strlen(buffer), &dwWritten, NULL);
-		std::cout << message.c_str() << std::endl;
-		CloseHandle(hFile);
-	}
-}
+    //ResetGamma();
+    
+    ApplicationInfo::hModule = hModule;
 
-void CreateMiniDump(EXCEPTION_POINTERS* pep)
-{
-	CreateTextDump(pep);
-}
+    if (!GetModuleHandleW(PhasmoHook::GetGameProcessName())) {
+        return TRUE;
+    }
 
-LONG WINAPI MyUnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionInfo)
-{
-	std::cout << "Unhandled exception occurred! Creating a minidump...\n";
+    std::thread([hModule, phasmo = std::move(phasmo)]() mutable {
+        console::StartConsole(L"Console", false);
 
-	CreateMiniDump(pExceptionInfo);
+        phasmo.Log("Initializing PhasmoHook by 0xcds4r..");
+        phasmo.initConfig();
 
-	return EXCEPTION_EXECUTE_HANDLER;
-}
+        Network::Init();
+        UnityResolve::Init(GetModuleHandleA("GameAssembly.dll"), UnityResolve::Mode::Il2Cpp);
+        InjectHooks();
 
-auto APIENTRY DllMain(HMODULE hModule, const DWORD ul_reason_for_call, LPVOID lpReserved) -> BOOL 
-{
-	SetConsoleOutputCP(CP_UTF8);
+        dx_hook::Hk11::Build([&phasmo]() {
+            if (phasmo.initializeImGui()) {
+                ImGui_ImplDX11_NewFrame();
+                ImGui_ImplWin32_NewFrame();
+                ImGui::NewFrame();
 
-	if (ul_reason_for_call == DLL_PROCESS_ATTACH) 
-	{
-		ApplicationInfo::hModule = hModule;
-		//SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+                gui.GlobalDraw();
 
-		if (HMODULE phasm = GetModuleHandle(GAME_PROCESS_NAME)) {
-			std::thread([hModule] {
-				console::StartConsole(L"Console", false);
-				
-				InitPlugin();
+                ImGui::EndFrame();
+                ImGui::Render();
 
-				dx_hook::Hk11::Build([] { RenderImGui(); });
-				std::thread(FeatureUpdateLoop).detach();
-				}
-			).detach();
-		}
-	}
-	return TRUE;
-}
+                auto* context = dx_hook::Hk11::GetContext();
+                ID3D11RenderTargetView* const* targetPtr = dx_hook::Hk11::GetTargetView();
+                context->OMSetRenderTargets(1, targetPtr, nullptr); 
+                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            }
+            });
 
-auto CALLBACK HookCallBack(int Code, WPARAM wParam, LPARAM lParam) -> LRESULT {
-	std::wstring file(255, '\0');
-	GetModuleFileNameW(ApplicationInfo::hModule, file.data(), 255);
-	LoadLibraryW(file.c_str());
-	return CallNextHookEx(nullptr, Code, wParam, lParam);
-}
-
-auto GetIdByName(const std::wstring& name) -> DWORD {
-	HANDLE hsnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	if (hsnapshot == INVALID_HANDLE_VALUE) return -1;
-
-	PROCESSENTRY32 processer;
-	processer.dwSize = sizeof(PROCESSENTRY32);
-
-	for (int flag = Process32First(hsnapshot, &processer); flag; flag = Process32Next(hsnapshot, &processer)) {
-		if (processer.szExeFile == name) {
-			CloseHandle(hsnapshot);
-			return processer.th32ProcessID;
-		}
-	}
-
-	CloseHandle(hsnapshot);
-	return -2;
-}
-
-
-
-static DWORD idThread;
-
-auto CALLBACK EnumFunc(HWND hWnd, LPARAM pid) -> BOOL {
-	DWORD dwProcessId;
-	if (GetWindowThreadProcessId(hWnd, &dwProcessId) && dwProcessId == pid && IsWindowVisible(hWnd)) {
-		idThread = GetWindowThreadProcessId(hWnd, nullptr);
-		return FALSE; // Stop enumeration
-	}
-	return TRUE; // Continue enumeration
-}
-
-extern "C" _declspec(dllexport) auto Inject() -> void {
-	if (auto pid = GetIdByName(GAME_PROCESS_NAME); pid != -1) {
-		EnumWindows(EnumFunc, pid);
-		if (auto hook = SetWindowsHookExW(WH_GETMESSAGE, HookCallBack, ApplicationInfo::hModule, idThread)) {
-			PostThreadMessageW(idThread, WM_NULL, 0, 0);
-		}
-	}
+        std::thread([&phasmo]() { phasmo.featureUpdateLoop(); }).detach();
+        }).detach();
+    return TRUE;
 }

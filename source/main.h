@@ -19,7 +19,7 @@
 #include <typeindex>
 #include <functional>
 
-void Log(const std::string& message);
+//void Log(const std::string& message);
 
 // log stuff
 #include "../library/Console.hpp"
@@ -35,8 +35,8 @@ void Log(const std::string& message);
 #include "../library/detours/HookManager.h"
 #include "../library/magic_enum/magic_enum_all.hpp"
 
-#define GAME_PROCESS_NAME L"Phasmophobia.exe"
-#define CONFIG_FILE_NAME "phasmohook-cfg.json"
+//#define GAME_PROCESS_NAME L"Phasmophobia.exe"
+//#define CONFIG_FILE_NAME "phasmohook-cfg.json"
 
 #define U8(X) reinterpret_cast<const char*>(X)
 using I = UnityResolve;
@@ -64,7 +64,7 @@ public:
     inline static float screenScaleY;
     inline static bool bMenuActive;
 	inline static bool bIsInLobby;
-    inline static bool bCheatEnabled[16]{};
+    inline static bool bCheatEnabled[40]{};
 };
 
 template <typename T>
@@ -137,6 +137,15 @@ void logOffsetValue(void* _this, unsigned int offset, const char* library, const
         LOGD(std::format("{} 0x{:X}: Unknown type", offsetName, offset));
     }
 }
+
+#define INVOKE_METHOD_EA(result_type, assembly, class_name, method_name)    \
+    ([]() -> result_type {                                              \
+        static I::Method* method = nullptr;                             \
+        if (!method) {                                                  \
+            method = I::Get(assembly)->Get(class_name)->Get<I::Method>(method_name); \
+        }                                                               \
+        return method ? method->Invoke<result_type>() : result_type();   \
+    })()
 
 #include "game/Game.h"
 #include "networking/Network.h"

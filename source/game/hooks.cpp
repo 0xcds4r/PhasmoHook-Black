@@ -7,23 +7,28 @@ auto UNITY_CALLING_CONVENTION SceneManager__LoadScene(II::String* sceneName) -> 
 {
 	H::Fcall(SceneManager__LoadScene, sceneName);
 	std::string sceneStr = std::format("{}", sceneName->ToString());
-	Log("SceneManager__LoadScene -> " + sceneStr);
+	//Log("SceneManager__LoadScene -> " + sceneStr);
+}
+
+// MainManager__OnLeftRoom
+auto UNITY_CALLING_CONVENTION MainManager__OnLeftRoom(MainManager* thiz) -> void {
+	H::Fcall(MainManager__OnLeftRoom, thiz);
+	//Log("MainManager__OnLeftRoom");
+	Game::lobbyType = MAIN;
+}
+
+
+/// MainManager__OnApplicationQuit
+auto UNITY_CALLING_CONVENTION MainManager__OnApplicationQuit(MainManager* thiz) -> void {
+	H::Fcall(MainManager__OnApplicationQuit, thiz);
+	//Log("MainManager__OnApplicationQuit");
+	Game::lobbyType = MAIN;
 }
 
 auto UNITY_CALLING_CONVENTION MainManager__Start(MainManager* thiz) -> void {
-	//LOGD("MainManager__Start");
+	//Log("MainManager__Start");
 
-	// reset all data here
-	
-	ApplicationInfo::bIsInLobby = true;
-
-	//Room::Reset();
-	//Players::Reset();
-	Ghost::Reset();
-	gLevelController = nullptr;
-	pBone = nullptr;
-
-	
+	Game::OnMissionOver();
 
 	H::Fcall(MainManager__Start, thiz);
 }
@@ -47,7 +52,7 @@ auto UNITY_CALLING_CONVENTION RewardManager__HAwake(RewardManager* _this) -> voi
 }
 
 auto GetGhostFavouriteRoom() -> LevelRoom* {
-	if (gLevelController && !ApplicationInfo::bIsInLobby) {
+	if (gLevelController && Game::isOnMission) {
 		if (*(uintptr_t*)((uintptr_t)gLevelController + 0x50)) {
 			// has rooms
 			return *(LevelRoom**)((uintptr_t)gLevelController + 0x38);
@@ -67,7 +72,7 @@ auto UNITY_CALLING_CONVENTION EMF__Update(EMF* _this) -> void
 {
 	H::Fcall(EMF__Update, _this);
 
-	if (!Ghost::gCurrentGhost || ApplicationInfo::bIsInLobby) {
+	if (!Ghost::gCurrentGhost || !Game::isOnMission) {
 		return;
 	}
 
@@ -96,6 +101,7 @@ auto UNITY_CALLING_CONVENTION GhostModel__Show(void* _this, bool bShow) -> void
 	H::Fcall(GhostModel__Show, _this, bShow);
 }
 
+
 auto UNITY_CALLING_CONVENTION PlayerStamina__Update(void* _this) -> void
 {
 	if (_this && ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA]) {
@@ -111,18 +117,100 @@ auto UNITY_CALLING_CONVENTION DNAEvidence__Spawn(DNAEvidence* _this, int pos) ->
 	pBone = _this;
 }
 
+auto UNITY_CALLING_CONVENTION ConnectToServer__SingleplayerButton(void* thiz) -> bool
+{
+	H::Fcall(ConnectToServer__SingleplayerButton, thiz);
+	//Log("Single player button clicked");
+	Game::lobbyType = eLobbyType::SINGLEPLAYER;
+	return true;
+}
+
+auto UNITY_CALLING_CONVENTION ConnectToServer__QuitButton(void* thiz) -> bool
+{
+	H::Fcall(ConnectToServer__QuitButton, thiz);
+	//Log("Quit button clicked");
+	Game::lobbyType = eLobbyType::MAIN;
+}
+
+// ConnectToServer__MultiplayerButton
+auto UNITY_CALLING_CONVENTION ConnectToServer__MultiplayerButton(void* thiz) -> bool
+{
+	H::Fcall(ConnectToServer__MultiplayerButton, thiz);
+	//Log("MultiPlayer button clicked");
+	Game::lobbyType = eLobbyType::MULTIPLAYER;
+	return true;
+}
+
+auto UNITY_CALLING_CONVENTION LobbyController__OnLeftRoom(void* thiz) -> bool
+{
+	H::Fcall(LobbyController__OnLeftRoom, thiz);
+	//Log("LobbyController__OnLeftRoom");
+	Game::lobbyType = eLobbyType::MAIN;
+}
+
+
+
+auto UNITY_CALLING_CONVENTION BrightnessChangeValue(uintptr_t _this, float val) -> void
+{
+	std::cout << "BrightnessChangeValue" << std::endl;
+	//val *= 1000.0f;
+	//_this->brightnessValue = 1000
+	//*(float*)((uintptr_t)_this + 0x60) = 500.0f; // brightness value
+	H::Fcall(BrightnessChangeValue, _this, val);
+}
+
+
 void InjectGlobal() {
-	Log("InjectGlobal");
+	//Log("InjectGlobal");
+
+	//setupHook("UnityEngine.CoreModule.dll", "RenderSettings", "set_ambientLight_Injected", set_ambientLight_Injected);
+	//setupHook("Assembly-CSharp.dll", "GameGraphicsManager", "BrightnessChangeValue", BrightnessChangeValue);
 
 	setupHook("Assembly-CSharp.dll", "MainManager", "Start", MainManager__Start);
+	setupHook("Assembly-CSharp.dll", "MainManager", "OnLeftRoom", MainManager__OnLeftRoom);
+
+	// GhostController__OnPlayerLeftRoom
+	//setupHook("Assembly-CSharp.dll", "GhostController", "OnPlayerLeftRoom", LobbyController__OnLeftRoom);
+	// LobbyController__OnLeftRoom
+
+
+	//setupRVAHook((void*)0x741820, MainManager__OnApplicationQuit);
+	// OnApplicationQuit
+	// 
 	//setupHook("Assembly-CSharp.dll", "LevelController", "get_favouriteGhostRoom", LevelController__HGetFavGhostRoom);
 	setupHook("Assembly-CSharp.dll", "LevelController", "Awake", LevelController__HAwake);
 	setupHook("Assembly-CSharp.dll", "EMF", "Update", EMF__Update);
 
 	setupHook("Assembly-CSharp.dll", "DNAEvidence", "Spawn", DNAEvidence__Spawn);
 
-	setupRVAHook((void*)0x97D470, PlayerStamina__Update);
-	setupRVAHook((void*)0x158D6D0, GhostModel__Show); // 0x158D6D0
+	/*
+void PlayerStamina_Update(PlayerStamina_o *this, const MethodInfo *method)
+{
+	// 1809DBEA0
+	// [Address(RVA = "0x9DBEA0", Offset = "0x9DA8A0", VA = "0x1809DBEA0")]
+	// got 0x9DBEA0
+  PlayerStamina____________6452788896(this, 0LL);
+}
+
+*/
+
+	setupRVAHook((void*)0x9DBEA0, PlayerStamina__Update);
+
+
+	//setupRVAHook((void*)0x158D6D0, GhostModel__Show); // 0x158D6D0
+
+	// SingleplayerProfile__Start
+	// LobbyController__CheckIfSingleplayer
+	setupHook("Assembly-CSharp.dll", "ConnectToServer", "SingleplayerButton", ConnectToServer__SingleplayerButton);
+	//setupHook("Assembly-CSharp.dll", "ConnectToServer", "QuitButton", ConnectToServer__QuitButton);
+	setupHook("Assembly-CSharp.dll", "ConnectToServer", "MultiplayerButton", ConnectToServer__MultiplayerButton);
+	// MultiplayerButton
+
+
+	// 
+	// 
+	// 0x789610
+	//setupRVAHook((void*)0x789610, ServerManager__AddPlayerCard);
 	
 	//setupHook("Assembly-CSharp.dll", "PCStamina", "Update", PCStamina__HUpdate);
 	// 0x97D470 - PlayerStamina::Update (Crypted)
@@ -137,7 +225,7 @@ void InjectHooks()
 {
 	if (bOnceInjected) return;
 
-	Log("InjectHooks");
+	//Log("InjectHooks");
 
 	InjectGlobal();
 

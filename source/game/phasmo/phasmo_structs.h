@@ -1,5 +1,7 @@
 #pragma once
 
+//#include "il2cpp.h"
+
 class Hashtable : public std::unordered_map<void*, void*> {};
 
 struct Vector3 {
@@ -228,7 +230,6 @@ public:
     void* data;
 };
 
-
 // ghost
 struct GhostTraits {
     GhostType typeFirst;
@@ -257,14 +258,40 @@ public:
     bool blUnk; // 0x7C
 };
 
+
+//struct GhostAI_VTable
+//{
+//    VirtualInvokeData _0_Equals;
+//    VirtualInvokeData _1_Finalize;
+//    VirtualInvokeData _2_GetHashCode;
+//    VirtualInvokeData _3_ToString;
+//};
+//
+//struct GhostAI_c
+//{
+//    Il2CppClass_1 _1;
+//    void* static_fields;
+//    Il2CppRGCTXData* rgctx_data;
+//    Il2CppClass_2 _2;
+//    GhostAI_VTable vtable;
+//};
+//
+//struct GhostAI_o
+//{
+//    GhostAI_c* klass;
+//    void* monitor;
+//    GhostAI_Fields fields;
+//};
+
+
 class GhostAI : public II::MonoBehaviour {
 public:
     void* data;
-    /*char padding1[8];
+    char padding1[8];
     GhostState state; // 0x28
-    Photon::Pun::PhotonView photonView; // 0x30
-    GhostInfo ghostInfo; // 0x38
-    void* navMeshAgent; // 0x40
+    //Photon::Pun::PhotonView photonView; // 0x30
+    //GhostInfo ghostInfo; // 0x38
+    /*void* navMeshAgent; // 0x40
     void* ghostAudio; // 0x48
     void* ghostInteraction; // 0x50
     void* ghostActivity; // 0x58

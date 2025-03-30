@@ -83,9 +83,40 @@ public:
 	static void* GetGhostModel(GhostAI* _this);
 	static GhostInfo* GetInfo(GhostAI* _this);
 
-	static bool GetHunting(GhostAI* _this);
 	static bool IsHunting();
-	
+	static bool IsGhostEvent();
+	static bool IncenseEffect();
+
+	template<typename T>
+	static inline T GetPointerData(uintptr_t offset) {
+		if (!Ghost::gCurrentGhost) return T{};
+		return GetOffsetValue<T>((void*)Ghost::gCurrentGhost, offset, "Assembly-CSharp.dll", "GhostAI");
+	}
+
+	static std::string GetHexBytes(size_t from, size_t to) {
+		if (!Ghost::gCurrentGhost) return "No ghost data";
+		if (from > to) return "Invalid range: 'from' must be less than or equal to 'to'";
+
+		std::stringstream ss;
+		ss << std::hex << std::setfill('0');  
+
+		for (size_t i = from; i <= to; ++i) {
+			unsigned char value = GetPointerData<unsigned char>(i);
+
+			ss << "0x" << std::setw(2) << i << ": "  
+				<< std::setw(2) << static_cast<unsigned int>(value);  
+
+			if ((i - from) % 10 == 9 && i < to) {
+				ss << "\n";
+			}
+			else if (i < to) {
+				ss << " ";
+			}
+		}
+
+		return ss.str();
+	}
+
 	static const char* GetName();
 	static const char* GetTypeName();
 	static int GetAge();

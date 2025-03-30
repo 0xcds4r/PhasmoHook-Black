@@ -14,7 +14,7 @@ void PlayerPool::RegisterPlayer(Player* player)
             return;
         }
 
-        Log(std::format("PlayerPool RegisterPlayer: {}", i));
+        //Log(std::format("PlayerPool RegisterPlayer: {}", i));
         players[i] = new NetworkPlayer(player); 
         if (players[i])
         {
@@ -27,10 +27,10 @@ void PlayerPool::RegisterPlayer(Player* player)
         }
     }
     catch (const std::exception& e) {
-        Log(std::format("Exception in RegisterPlayer: {}", e.what()));
+        //Log(std::format("Exception in RegisterPlayer: {}", e.what()));
     }
     catch (...) {
-        Log("Unknown exception in RegisterPlayer.");
+        //Log("Unknown exception in RegisterPlayer.");
     }
 }
 
@@ -45,17 +45,17 @@ void PlayerPool::UnregisterPlayer(Player* player)
         if (players[id] && players[id]->GetPlayer() && players[id]->GetName())
         {
             if (players[id]->GetPlayer() == player) {
-                Log(std::format("PlayerPool Unregister Player: {}", id));
+                //Log(std::format("PlayerPool Unregister Player: {}", id));
                 delete players[id]; 
                 players[id] = nullptr;
             }
         }
     }
     catch (const std::exception& e) {
-        Log(std::format("Exception in UnregisterPlayer: {}", e.what()));
+        //Log(std::format("Exception in UnregisterPlayer: {}", e.what()));
     }
     catch (...) {
         // ? ? ?
-        Log("Unknown exception in UnregisterPlayer.");
+        //Log("Unknown exception in UnregisterPlayer.");
     }
 }

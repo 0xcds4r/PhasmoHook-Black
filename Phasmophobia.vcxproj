@@ -136,6 +136,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Desktop\il2cppdump\il2cpp.h" />
     <ClInclude Include="source\networking\Network.h" />
     <ClInclude Include="source\game\Game.h" />
     <ClInclude Include="library\UnityResolve.hpp" />

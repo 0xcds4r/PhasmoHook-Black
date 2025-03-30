@@ -25,4 +25,6 @@ public:
         bool isLocalPlayer = GetOffsetValue<bool>((void*)_realTimePlayer, 0x1C, "PhotonRealtime.dll", "Player");
         return isLocalPlayer;
     }
+
+    static void* GetLocalPlayer();
 };

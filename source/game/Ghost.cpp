@@ -3,14 +3,14 @@
 
 void Ghost::Init()
 {
-    Log("Ghost::Init");
+    //Log("Ghost::Init");
 
     setupHook("Assembly-CSharp.dll", "GhostAI", "Awake", HAwake);
     setupHook("Assembly-CSharp.dll", "GhostAI", "Update", HUpdate);
 }
 
 void Ghost::Reset() {
-    Log("Ghost::Reset");
+    //Log("Ghost::Reset");
     
     gCurrentGhost = nullptr;
     Ghost::emfData.clear();
@@ -38,7 +38,8 @@ const char* GetEMFGhostActionTypeNames(EMFGhostActionType action) {
 
 GhostState Ghost::GetState(GhostAI* _this) {
     if (!_this) return GhostState::Idle;
-    return GetOffsetValue<GhostState>((void*)_this, 0x28, "Assembly-CSharp.dll", "GhostAI");
+
+    return _this->state;
 }
 
 void* Ghost::GetGhostModel(GhostAI* _this) {
@@ -51,16 +52,16 @@ GhostInfo* Ghost::GetInfo(GhostAI* _this) {
     return GetOffsetValue<GhostInfo*>((void*)_this, 0x38, "Assembly-CSharp.dll", "GhostAI");
 }
 
-bool Ghost::GetHunting(GhostAI* _this) {
-    if (!_this) return false;
-    return GetOffsetValue<bool>((void*)_this, 0xE9, "Assembly-CSharp.dll", "GhostAI");
+bool Ghost::IncenseEffect() {
+    return GetPointerData<bool>(0xFB); // when using incense it sets to 1
+}
+
+bool Ghost::IsGhostEvent() {
+    return GetPointerData<bool>(0xFA) || Ghost::GetState(Ghost::gCurrentGhost) == GhostState::RandomEvent; // new offset
 }
 
 bool Ghost::IsHunting() {
-    if (Ghost::gCurrentGhost) {
-        return Ghost::GetHunting(Ghost::gCurrentGhost);
-    }
-    return false;
+    return GetPointerData<bool>(0xF9); // new offset
 }
 
 const char* Ghost::GetName()
@@ -128,7 +129,7 @@ inline auto UNITY_CALLING_CONVENTION Ghost::HAwake(GhostAI* _this) -> void
 {
     H::Fcall(HAwake, _this);
     Ghost::gCurrentGhost = _this;
-    ApplicationInfo::bIsInLobby = false;
+    Game::OnMissionStart();
 }
 
 inline auto UNITY_CALLING_CONVENTION Ghost::HUpdate(GhostAI* _this) -> void

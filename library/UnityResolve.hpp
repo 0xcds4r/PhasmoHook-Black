@@ -147,7 +147,9 @@ public:
 		} // new
 
 		template <typename RType>
-		auto SetValue(void* obj, const std::string& name, RType value) -> void { return *reinterpret_cast<RType*>(reinterpret_cast<uintptr_t>(obj) + Get<Field>(name)->offset) = value; }
+		auto SetValue(void* obj, const std::string& name, RType value) -> void {
+			*reinterpret_cast<RType*>(reinterpret_cast<uintptr_t>(obj) + Get<Field>(name)->offset) = value;
+		}
 
 		// UnityType::CsType*
 		[[nodiscard]] auto GetType() -> void* {
@@ -1061,6 +1063,10 @@ public:
 				this->y /= x.y;
 				this->z /= x.z;
 				return *this;
+			}
+
+			auto isZero() const -> bool {
+				return *this == Vector3(0.0f, 0.0f, 0.0f);
 			}
 
 			auto operator ==(const Vector3 x) const -> bool { return this->x == x.x && this->y == x.y && this->z == x.z; }
@@ -2818,6 +2824,46 @@ public:
 				}
 				return {};
 			}
+
+			bool GetEnabled() {
+				UnityResolve::Class* colliderClass = UnityResolve::Get("UnityEngine.PhysicsModule.dll")->Get("Collider");
+				if (colliderClass) {
+					UnityResolve::Method* getEnabledMethod = colliderClass->Get<UnityResolve::Method>("get_enabled", {});
+					if (getEnabledMethod) {
+						return getEnabledMethod->Invoke<bool>(this);
+					}
+				}
+				return false;
+			}
+
+			void SetEnabled(bool value) {
+				UnityResolve::Class* colliderClass = UnityResolve::Get("UnityEngine.PhysicsModule.dll")->Get("Collider");
+				if (colliderClass) {
+					UnityResolve::Method* setEnabledMethod = colliderClass->Get<UnityResolve::Method>("set_enabled", { "System.Boolean" });
+					if (setEnabledMethod) {
+						setEnabledMethod->Invoke<void>(this, value);
+					}
+				}
+			}
+
+			static std::vector<Collider*> FindAll() {
+				UnityResolve::Class* colliderClass = UnityResolve::Get("UnityEngine.PhysicsModule.dll")->Get("Collider");
+				if (colliderClass) {
+					return colliderClass->FindObjectsByType<Collider*>();
+				}
+				return {};
+			}
+
+			GameObject* GetGameObjectCollider() {
+				UnityResolve::Class* componentClass = UnityResolve::Get("UnityEngine.PhysicsModule.dll")->Get("Component");
+				if (componentClass) {
+					UnityResolve::Field* gameObjectField = componentClass->Get<UnityResolve::Field>("m_GameObject");
+					if (gameObjectField) {
+						return componentClass->GetValue<GameObject*>(this, "m_GameObject");
+					}
+				}
+				return nullptr;
+			}
 		};
 
 		struct Mesh : UnityObject {
@@ -3050,6 +3096,79 @@ public:
 				static Method* method;
 				if (!method) method = Get("UnityEngine.CoreModule.dll")->Get("Time")->Get<Method>("set_timeScale");
 				if (method) return method->Invoke<void>(value);
+			}
+		};
+
+		struct Light : Behaviour {
+			int m_BakedIndex;
+			enum class LightType { Spot = 0, Directional = 1, Point = 2, Area = 3 };
+
+			static std::vector<Light*> FindAll() {
+				UnityResolve::Class* lightClass = UnityResolve::Get("UnityEngine.CoreModule.dll")->Get("Light");
+				if (lightClass) {
+					return lightClass->FindObjectsByType<Light*>();
+				}
+				return {};
+			}
+
+			void SetIntensity(float value) {
+				UnityResolve::Class* lightClass = UnityResolve::Get("UnityEngine.CoreModule.dll")->Get("Light");
+				if (lightClass) {
+					UnityResolve::Method* setIntensityMethod = lightClass->Get<UnityResolve::Method>("set_intensity", { "System.Single" });
+					if (setIntensityMethod) {
+						setIntensityMethod->Invoke<void>(this, value);
+					}
+				}
+				else {
+					std::cerr << "Light class not found" << std::endl;
+				}
+			}
+
+			void SetRange(float value) {
+				UnityResolve::Class* lightClass = UnityResolve::Get("UnityEngine.CoreModule.dll")->Get("Light");
+				if (lightClass) {
+					UnityResolve::Method* setIntensityMethod = lightClass->Get<UnityResolve::Method>("set_range", { "System.Single" });
+					if (setIntensityMethod) {
+						setIntensityMethod->Invoke<void>(this, value);
+					}
+				}
+				else {
+					std::cerr << "Light class not found" << std::endl;
+				}
+			}
+
+			float GetIntensity() {
+				UnityResolve::Class* lightClass = UnityResolve::Get("UnityEngine.CoreModule.dll")->Get("Light");
+				if (lightClass) {
+					UnityResolve::Method* getIntensityMethod = lightClass->Get<UnityResolve::Method>("get_intensity", {});
+					if (getIntensityMethod) {
+						return getIntensityMethod->Invoke<float>(this);
+					}
+					else {
+						std::cerr << "Method 'get_intensity' not found" << std::endl;
+					}
+				}
+				else {
+					std::cerr << "Light class not found" << std::endl;
+				}
+				return 0.0f;
+			}
+
+			float GetRange() {
+				UnityResolve::Class* lightClass = UnityResolve::Get("UnityEngine.CoreModule.dll")->Get("Light");
+				if (lightClass) {
+					UnityResolve::Method* getRangeMethod = lightClass->Get<UnityResolve::Method>("get_range", {});
+					if (getRangeMethod) {
+						return getRangeMethod->Invoke<float>(this);
+					}
+					else {
+						std::cerr << "Method 'get_range' not found" << std::endl;
+					}
+				}
+				else {
+					std::cerr << "Light class not found" << std::endl;
+				}
+				return 0.0f; 
 			}
 		};
 

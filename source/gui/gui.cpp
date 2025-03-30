@@ -1,57 +1,113 @@
 #include "../main.h"
+#include <array>
+#include <unordered_map>
 
 extern PlayerPool* pPlayerPool;
+extern DNAEvidence* pBone;
 
 NotificationManager notificationManager;
-auto GetGhostFavouriteRoom() -> LevelRoom*;
 
+auto GetGhostFavouriteRoom() -> LevelRoom*;
 auto UNITY_CALLING_CONVENTION GhostModel__Show(void* _this, bool bShow) -> void;
 
-void ShowGhostModelForce(bool bShow) {
-    if (!Ghost::gCurrentGhost) {
-        return;
-    }
-    void* pModel = Ghost::GetGhostModel(Ghost::gCurrentGhost);
-    if (!pModel) {
-        return;
-    }
+float defBright_Light = 0.0f;
+float defRange_Light = 0.0f;
 
-    GhostModel__Show(pModel, bShow);
+float defBright_PCAreaLight = 0.0f;
+float defRange_PCAreaLight = 0.0f;
+
+float defBright_DirectionalLight = 0.0f;
+float defRange_DirectionalLight = 0.0f;
+
+void SetSpecificLightBrightness(const std::string& lightName, float brightness, float range) {
+    auto* mainCamera = II::Camera::GetMain();
+    if (!mainCamera) return;
+    auto lights = UnityResolve::UnityType::Light::FindAll();
+    if (!lights.empty()) {
+        bool found = false;
+        for (auto* light : lights) {
+            if (light) {
+                auto* go = light->GetGameObject();
+                if (go) {
+                    std::string name = std::format("{}", go->GetName()->ToString());
+                    if (name.find(lightName) != std::string::npos) {
+                        light->SetIntensity(brightness);
+                        light->SetRange(range);
+                        //std::cout << "Applied brightness " << brightness << " to light: " << lightName << std::endl;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!found) {
+            //std::cerr << "Light with name '" << lightName << "' not found" << std::endl;
+        }
+    }
+    else {
+        //std::cerr << "No active lights found in the scene" << std::endl;
+    }
 }
 
-const std::vector<std::tuple<II::Animator::HumanBodyBones, II::Animator::HumanBodyBones, const char*>> bonePairs = {
-    // Head and spine
-    { II::Animator::HumanBodyBones::Head, II::Animator::HumanBodyBones::Neck, "Head -> Neck" },
-    { II::Animator::HumanBodyBones::Neck, II::Animator::HumanBodyBones::UpperChest, "Neck -> UpperChest" },
-    { II::Animator::HumanBodyBones::UpperChest, II::Animator::HumanBodyBones::Chest, "UpperChest -> Chest" },
-    { II::Animator::HumanBodyBones::Chest, II::Animator::HumanBodyBones::Spine, "Chest -> Spine" },
-    { II::Animator::HumanBodyBones::Spine, II::Animator::HumanBodyBones::Hips, "Spine -> Hips" },
+bool GetSpecificLightBrightness(const std::string& lightName, float* brightness, float* range) {
+    auto* mainCamera = II::Camera::GetMain();
+    if (!mainCamera) return false;
 
-    // Left arm
-    { II::Animator::HumanBodyBones::LeftShoulder, II::Animator::HumanBodyBones::LeftUpperArm, "LeftShoulder -> LeftUpperArm" },
-    { II::Animator::HumanBodyBones::LeftUpperArm, II::Animator::HumanBodyBones::LeftLowerArm, "LeftUpperArm -> LeftLowerArm" },
-    { II::Animator::HumanBodyBones::LeftLowerArm, II::Animator::HumanBodyBones::LeftHand, "LeftLowerArm -> LeftHand" },
+    auto lights = UnityResolve::UnityType::Light::FindAll();
+    if (!lights.empty()) {
+        for (auto* light : lights) {
+            if (light) {
+                auto* go = light->GetGameObject();
+                if (go) {
+                    std::string name = std::format("{}", go->GetName()->ToString());
+                    if (name.find(lightName) != std::string::npos) {
+                        *brightness = light->GetIntensity();
+                        *range = light->GetRange();
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
 
-    // Right arm
-    { II::Animator::HumanBodyBones::RightShoulder, II::Animator::HumanBodyBones::RightUpperArm, "RightShoulder -> RightUpperArm" },
-    { II::Animator::HumanBodyBones::RightUpperArm, II::Animator::HumanBodyBones::RightLowerArm, "RightUpperArm -> RightLowerArm" },
-    { II::Animator::HumanBodyBones::RightLowerArm, II::Animator::HumanBodyBones::RightHand, "RightLowerArm -> RightHand" },
+namespace GhostUtils {
+    inline void ShowGhostModelForce(bool bShow) {
+        if (!Ghost::gCurrentGhost) return;
+        if (void* pModel = Ghost::GetGhostModel(Ghost::gCurrentGhost)) {
+            GhostModel__Show(pModel, bShow);
+        }
+    }
+}
 
-    // Left leg
-    { II::Animator::HumanBodyBones::LeftUpperLeg, II::Animator::HumanBodyBones::LeftLowerLeg, "LeftUpperLeg -> LeftLowerLeg" },
-    { II::Animator::HumanBodyBones::LeftLowerLeg, II::Animator::HumanBodyBones::LeftFoot, "LeftLowerLeg -> LeftFoot" },
-    { II::Animator::HumanBodyBones::LeftFoot, II::Animator::HumanBodyBones::LeftToes, "LeftFoot -> LeftToes" },
-
-    // Right leg
-    { II::Animator::HumanBodyBones::RightUpperLeg, II::Animator::HumanBodyBones::RightLowerLeg, "RightUpperLeg -> RightLowerLeg" },
-    { II::Animator::HumanBodyBones::RightLowerLeg, II::Animator::HumanBodyBones::RightFoot, "RightLowerLeg -> RightFoot" },
-    { II::Animator::HumanBodyBones::RightFoot, II::Animator::HumanBodyBones::RightToes, "RightFoot -> RightToes" },
-
-    // Eyes and jaw
-    { II::Animator::HumanBodyBones::LeftEye, II::Animator::HumanBodyBones::Head, "LeftEye -> Head" },
-    { II::Animator::HumanBodyBones::RightEye, II::Animator::HumanBodyBones::Head, "RightEye -> Head" },
-    { II::Animator::HumanBodyBones::Jaw, II::Animator::HumanBodyBones::Head, "Jaw -> Head" }
+struct BonePair {
+    II::Animator::HumanBodyBones start, end;
+    const char* label;
 };
+
+constexpr std::array<BonePair, 20> bonePairs = { {
+    {II::Animator::HumanBodyBones::Head, II::Animator::HumanBodyBones::Neck, "Head -> Neck"},
+    {II::Animator::HumanBodyBones::Neck, II::Animator::HumanBodyBones::UpperChest, "Neck -> UpperChest"},
+    {II::Animator::HumanBodyBones::UpperChest, II::Animator::HumanBodyBones::Chest, "UpperChest -> Chest"},
+    {II::Animator::HumanBodyBones::Chest, II::Animator::HumanBodyBones::Spine, "Chest -> Spine"},
+    {II::Animator::HumanBodyBones::Spine, II::Animator::HumanBodyBones::Hips, "Spine -> Hips"},
+    {II::Animator::HumanBodyBones::LeftShoulder, II::Animator::HumanBodyBones::LeftUpperArm, "LeftShoulder -> LeftUpperArm"},
+    {II::Animator::HumanBodyBones::LeftUpperArm, II::Animator::HumanBodyBones::LeftLowerArm, "LeftUpperArm -> LeftLowerArm"},
+    {II::Animator::HumanBodyBones::LeftLowerArm, II::Animator::HumanBodyBones::LeftHand, "LeftLowerArm -> LeftHand"},
+    {II::Animator::HumanBodyBones::RightShoulder, II::Animator::HumanBodyBones::RightUpperArm, "RightShoulder -> RightUpperArm"},
+    {II::Animator::HumanBodyBones::RightUpperArm, II::Animator::HumanBodyBones::RightLowerArm, "RightUpperArm -> RightLowerArm"},
+    {II::Animator::HumanBodyBones::RightLowerArm, II::Animator::HumanBodyBones::RightHand, "RightLowerArm -> RightHand"},
+    {II::Animator::HumanBodyBones::LeftUpperLeg, II::Animator::HumanBodyBones::LeftLowerLeg, "LeftUpperLeg -> LeftLowerLeg"},
+    {II::Animator::HumanBodyBones::LeftLowerLeg, II::Animator::HumanBodyBones::LeftFoot, "LeftLowerLeg -> LeftFoot"},
+    {II::Animator::HumanBodyBones::LeftFoot, II::Animator::HumanBodyBones::LeftToes, "LeftFoot -> LeftToes"},
+    {II::Animator::HumanBodyBones::RightUpperLeg, II::Animator::HumanBodyBones::RightLowerLeg, "RightUpperLeg -> RightLowerLeg"},
+    {II::Animator::HumanBodyBones::RightLowerLeg, II::Animator::HumanBodyBones::RightFoot, "RightLowerLeg -> RightFoot"},
+    {II::Animator::HumanBodyBones::RightFoot, II::Animator::HumanBodyBones::RightToes, "RightFoot -> RightToes"},
+    {II::Animator::HumanBodyBones::LeftEye, II::Animator::HumanBodyBones::Head, "LeftEye -> Head"},
+    {II::Animator::HumanBodyBones::RightEye, II::Animator::HumanBodyBones::Head, "RightEye -> Head"},
+    {II::Animator::HumanBodyBones::Jaw, II::Animator::HumanBodyBones::Head, "Jaw -> Head"}
+} };
 
 ImVec4 HexToRGBA(const std::string& hex) {
     int r, g, b, a;
@@ -59,168 +115,159 @@ ImVec4 HexToRGBA(const std::string& hex) {
     return ImVec4(static_cast<float>(r) / 255, static_cast<float>(g) / 255, static_cast<float>(b) / 255, static_cast<float>(a) / 255);
 }
 
-void DrawTextFromPosition(const char* text, II::Vector3 position)
-{
-    auto pMainCamera = II::Camera::GetMain();
-    if (!pMainCamera) return;
-    if (position.x == 0.0f && position.y == 0.0f && position.z == 0.0f) return;
-
-    auto point = pMainCamera->WorldToScreenPoint(position, UnityResolve::UnityType::Camera::Eye::Mono);
-
-    if (point.z > 0) {
-        point.y = ApplicationInfo::screenHeight - point.y;
-
-        if (point.x >= 0 && point.x < ApplicationInfo::screenWidth && point.y >= 0 && point.y < ApplicationInfo::screenHeight) {
-
-            ImVec2 textSize = ImGui::CalcTextSize(text);
-
-            float centeredX = point.x - textSize.x / 2.0f;
-            float centeredY = point.y - textSize.y / 2.0f;
-
-            ImGui::GetBackgroundDrawList()->AddText({ centeredX, centeredY }, ImColor(255, 255, 255, 255), text);
+inline void DrawTextFromPosition(std::string_view text, const II::Vector3& position) {
+    if (auto* camera = II::Camera::GetMain()) {
+        if (!position.isZero()) {
+            auto point = camera->WorldToScreenPoint(position, UnityResolve::UnityType::Camera::Eye::Mono);
+            if (point.z > 0) {
+                point.y = ApplicationInfo::screenHeight - point.y;
+                if (point.x >= 0 && point.x < ApplicationInfo::screenWidth &&
+                    point.y >= 0 && point.y < ApplicationInfo::screenHeight) {
+                    ImVec2 textSize = ImGui::CalcTextSize(text.data());
+                    ImGui::GetBackgroundDrawList()->AddText(
+                        { point.x - textSize.x * 0.5f, point.y - textSize.y * 0.5f },
+                        IM_COL32(255, 255, 255, 255),
+                        text.data()
+                    );
+                }
+            }
         }
     }
 }
 
 void Gui::ApplyStyles() {
-    Log("Phasmohook applying gui styles..");
+    ImGuiStyle& style = ImGui::GetStyle();
 
-    auto& styles = ImGui::GetStyle();
+    constexpr ImVec2 windowPadding(15.0f, 15.0f);
+    constexpr ImVec2 framePadding(5.0f, 5.0f);
+    constexpr ImVec2 itemSpacing(12.0f, 8.0f);
+    constexpr ImVec2 itemInnerSpacing(8.0f, 6.0f);
 
-    auto colors = styles.Colors;
+    style.WindowPadding = windowPadding;
+    style.FramePadding = ImVec2(5.0f, 4.0f);
+    style.ItemSpacing = itemSpacing;
+    style.ItemInnerSpacing = itemInnerSpacing;
+    style.IndentSpacing = 25.0f;
+    style.ScrollbarSize = 15.0f;
+    style.GrabMinSize = 15.0f;
+    style.WindowRounding = 15.0f;
+    style.ScrollbarRounding = 15.0f;
+    style.GrabRounding = 7.0f;
+    style.ChildRounding = 8.0f;
+    style.FrameRounding = 6.0f;
+    style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
+    style.AntiAliasedFill = style.AntiAliasedLines = style.AntiAliasedLinesUseTex = true;
 
-    // Настройки стилей
-    styles.WindowPadding = ImVec2(15, 15);
-    styles.WindowRounding = 15.0f;
-    styles.FramePadding = ImVec2(5, 5);
-    styles.ItemSpacing = ImVec2(12, 8);
-    styles.ItemInnerSpacing = ImVec2(8, 6);
-    styles.IndentSpacing = 25.0f;
-    styles.ScrollbarSize = 15.0f;
-    styles.ScrollbarRounding = 15.0f;
-    styles.GrabMinSize = 15.0f;
-    styles.GrabRounding = 7.0f;
-    styles.ChildRounding = 8.0f;
-    styles.ChildBorderSize = 1.0;
-    styles.FramePadding = ImVec2(5.0, 4.0);
-    styles.FrameRounding = 6.0f;
-    styles.WindowTitleAlign = ImVec2(0.5, 0.5);
-    styles.AntiAliasedFill = true;
-    styles.AntiAliasedLines = true;
-    styles.AntiAliasedLinesUseTex = true;
-
-    // Настройки цветов
-    colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
-    colors[ImGuiCol_TextDisabled] = ImVec4(0.36f, 0.42f, 0.47f, 1.00f);
-    colors[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);
-    colors[ImGuiCol_ChildBg] = ImVec4(0.15f, 0.18f, 0.22f, 1.00f);
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.98f, 1.0f);
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.36f, 0.42f, 0.47f, 1.0f);
+    colors[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.15f, 0.17f, 1.0f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.15f, 0.18f, 0.22f, 1.0f);
     colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
     colors[ImGuiCol_Border] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
-    colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.12f, 0.20f, 0.28f, 1.00f);
-    colors[ImGuiCol_FrameBgActive] = ImVec4(0.09f, 0.12f, 0.14f, 1.00f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.25f, 0.29f, 1.0f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.12f, 0.20f, 0.28f, 1.0f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.09f, 0.12f, 0.14f, 1.0f);
     colors[ImGuiCol_TitleBg] = ImVec4(0.09f, 0.12f, 0.14f, 0.65f);
-    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
-    colors[ImGuiCol_TitleBgActive] = ImVec4(0.08f, 0.10f, 0.12f, 1.00f);
-    colors[ImGuiCol_MenuBarBg] = ImVec4(0.15f, 0.18f, 0.22f, 1.00f);
-    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.39f);
-    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.18f, 0.22f, 0.25f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.09f, 0.21f, 0.31f, 1.00f);
-    //colors[ImGuiCol_Combo] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-    colors[ImGuiCol_CheckMark] = ImVec4(0.28f, 0.56f, 1.00f, 1.00f);
-    colors[ImGuiCol_SliderGrab] = ImVec4(0.28f, 0.56f, 1.00f, 1.00f);
-    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.37f, 0.61f, 1.00f, 1.00f);
-    colors[ImGuiCol_Button] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.08f, 0.10f, 0.12f, 1.0f);
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.20f, 0.25f, 0.29f, 1.0f);
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.18f, 0.22f, 0.25f, 1.0f);
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.09f, 0.21f, 0.31f, 1.0f);
+    colors[ImGuiCol_CheckMark] = ImVec4(0.28f, 0.56f, 1.0f, 1.0f);
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.28f, 0.56f, 1.0f, 1.0f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.37f, 0.61f, 1.0f, 1.0f);
+    colors[ImGuiCol_Button] = ImVec4(0.20f, 0.25f, 0.29f, 1.0f);
     colors[ImGuiCol_ButtonHovered] = COLOR_RED;
     colors[ImGuiCol_ButtonActive] = COLOR_RED;
-    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.25f, 0.29f, 0.55f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-    colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
-    colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-    colors[ImGuiCol_ResizeGripActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
-    //colors[ImGuiCol_CloseButton] = ImVec4(0.40f, 0.39f, 0.38f, 0.16f);
-    //colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.40f, 0.39f, 0.38f, 0.39f);
-    //colors[ImGuiCol_CloseButtonActive] = ImVec4(0.40f, 0.39f, 0.38f, 1.00f);
-    colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
-    colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-    colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-    colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
-    //colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
-extern auto ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;
+extern auto ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM) -> LRESULT;
+
 char Gui::ProcessInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     HotKey::PotMsg(msg);
 
+    static const std::unordered_map<WPARAM, std::pair<int, const char*>> hotkeys = {
+        {VK_RETURN, {0, "Menu"}},
+        {0x31, {CHEAT_PLAYER_ANTISTAMINA, "Disable Stamina"}},
+        {0x32, {CHEAT_GHOST_WALLHACK, "Ghost Wallhack"}},
+        {0x33, {CHEAT_HUNT_NOTIFIES, "Hunt notifications"}},
+        {0x34, {CHEAT_GHOST_INFO_SHOW, "Ghost info show"}},
+        {0x35, {CHEAT_EMF_DATA, "EMF Show"}},
+        {0x36, {CHEAT_FULLBRIGHT, "FullBright"}}/*,
+        {0x37, {CHEAT_SUPERFLASHLIGHT, "Super FlashLight"}}*/
+        
+        
+        /*,
+        {0x36, {CHEAT_GHOST_MODEL_SHOW, "Ghost Model Show"}},
+        {0x37, {CHEAT_VISIBLE_GHOST_AT_HUNT, "Visible Ghost Hunt"}}*/
+    };
+
     switch (msg) {
-    case WM_KEYUP:
-        break;
     case WM_KEYDOWN:
         if (wParam == VK_RETURN) {
             ApplicationInfo::bMenuActive = !ApplicationInfo::bMenuActive;
             ShowCursor(ApplicationInfo::bMenuActive);
         }
+        else if (auto it = hotkeys.find(wParam); it != hotkeys.end()) {
+            const auto& [cheatId, title] = it->second;
+            ApplicationInfo::bCheatEnabled[cheatId] = !ApplicationInfo::bCheatEnabled[cheatId];
+            AddNotify(title,
+                ApplicationInfo::bCheatEnabled[cheatId] ? "Toggle: Enabled" : "Toggle: Disabled",
+                3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+           /* if (cheatId == CHEAT_GHOST_MODEL_SHOW) {
+                GhostUtils::ShowGhostModelForce(ApplicationInfo::bCheatEnabled[cheatId]);
+            }*/
 
-        if (wParam == 0x31) {
-            ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA] = !ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA];
-            Gui::AddNotify("Disable Stamina", ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+           /* if (cheatId == CHEAT_SUPERFLASHLIGHT)
+            {
+                if (defBright_Light == 0.0f && defRange_Light == 0.0f)
+                    GetSpecificLightBrightness("Light", &defBright_Light, &defRange_Light);
+
+                if (ApplicationInfo::bCheatEnabled[CHEAT_SUPERFLASHLIGHT]) {
+                    SetSpecificLightBrightness("Light", 255.0f, 50.0f);
+                }
+                else
+                {
+                    SetSpecificLightBrightness("Light", defBright_Light, defRange_Light);
+                }
+            }*/
+
+            if (cheatId == CHEAT_FULLBRIGHT)
+            {
+                if (defBright_Light == 0.0f && defRange_Light == 0.0f)
+                    GetSpecificLightBrightness("Light", &defBright_Light, &defRange_Light);
+
+                if (defBright_PCAreaLight == 0.0f && defRange_PCAreaLight == 0.0f)
+                    GetSpecificLightBrightness("PCAreaLight", &defBright_PCAreaLight, &defRange_PCAreaLight);
+
+                if (defBright_DirectionalLight == 0.0f && defRange_DirectionalLight == 0.0f)
+                    GetSpecificLightBrightness("DirectionalLight", &defBright_DirectionalLight, &defRange_DirectionalLight);
+
+                if (ApplicationInfo::bCheatEnabled[CHEAT_FULLBRIGHT]) {
+                    SetSpecificLightBrightness("Light", 255.0f, 50.0f);
+                    SetSpecificLightBrightness("PCAreaLight", 255.0f, 50.0f);
+                    SetSpecificLightBrightness("Directional Light", 0.1f, 0.1f);
+                }
+                else
+                {
+                    SetSpecificLightBrightness("Light", defBright_Light, defRange_Light);
+                    SetSpecificLightBrightness("PCAreaLight", defBright_PCAreaLight, defRange_PCAreaLight);
+                    SetSpecificLightBrightness("Directiona Light", defBright_DirectionalLight, defRange_DirectionalLight);
+                }
+            }
         }
-
-        /*if (wParam == 0x33) {
-            ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK] = !ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK];
-            Gui::AddNotify("Players Wallhack", ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }*/
-
-        if (wParam == 0x32) {
-            ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK] = !ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK];
-            Gui::AddNotify("Ghost Wallhack", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }
-
-        if (wParam == 0x33) {
-            ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES] = !ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES];
-            Gui::AddNotify("Hunt notifications", ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }
-
-        if (wParam == 0x34) {
-            ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW] = !ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW];
-            Gui::AddNotify("Ghost info show", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }
-
-        if (wParam == 0x35) {
-            ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA] = !ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA];
-            Gui::AddNotify("EMF Show", ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }
-
-        // CHEAT_GHOST_MODEL_SHOW
-        if (wParam == 0x36) {
-            ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW] = !ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW];
-            Gui::AddNotify("Ghost Model Show", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            ShowGhostModelForce(ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW]);
-        }
-
-        // CHEAT_VISIBLE_GHOST_AT_HUNT
-        if (wParam == 0x37) {
-            ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT] = !ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT];
-            Gui::AddNotify("Visible Ghost Hunt", ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-        }
-
         break;
     case WM_CLOSE:
         if (MessageBox(nullptr, L"Exit?", L"Confirmation", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-            exit(0);
+            std::exit(0);
         }
         break;
     }
 
     if (ApplicationInfo::bMenuActive) {
         ClipCursor(nullptr);
-        return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+        return static_cast<char>(ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam));
     }
-
     ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
     return 1;
 }
@@ -229,241 +276,158 @@ void Gui::AddNotify(const std::string& title, const std::string& message, float 
     notificationManager.addNotification(title, message, displayTime, 10.0f, textColor, bgColor);
 }
 
-std::chrono::steady_clock::time_point lastFrameTime;
-void Gui::updateLoop(std::chrono::steady_clock::time_point time) {
+static std::chrono::steady_clock::time_point lastFrameTime;
+void Gui::updateLoop(std::chrono::steady_clock::time_point time) {    
     lastFrameTime = time;
 }
 
-void DrawBoneConnections(II::Animator* pAnimator, float distance) {
-    if (!pAnimator) return;
+inline void DrawBoneConnections(II::Animator* pAnimator, float distance) {
+    if (!pAnimator || !II::Camera::GetMain()) return;
 
-    auto pMainCamera = II::Camera::GetMain();
-    if (!pMainCamera || bonePairs.empty()) return;
+    auto* drawList = ImGui::GetBackgroundDrawList();
+    auto* camera = II::Camera::GetMain();
 
-    for (const auto& [boneStart, boneEnd, label] : bonePairs) {
-        auto pStart = pAnimator->GetBoneTransform(boneStart);
-        auto pEnd = pAnimator->GetBoneTransform(boneEnd);
+    for (const auto& pair : bonePairs) {
+        if (auto* start = pAnimator->GetBoneTransform(pair.start)) {
+            if (auto* end = pAnimator->GetBoneTransform(pair.end)) {
+                auto startPoint = camera->WorldToScreenPoint(start->GetPosition(), UnityResolve::UnityType::Camera::Eye::Mono);
+                auto endPoint = camera->WorldToScreenPoint(end->GetPosition(), UnityResolve::UnityType::Camera::Eye::Mono);
 
-        if (pStart && pEnd) {
-            auto pointStart = pMainCamera->WorldToScreenPoint(pStart->GetPosition(), UnityResolve::UnityType::Camera::Eye::Mono);
-            auto pointEnd = pMainCamera->WorldToScreenPoint(pEnd->GetPosition(), UnityResolve::UnityType::Camera::Eye::Mono);
-
-            if (pointStart.z > 0 && pointEnd.z > 0) {
-                pointStart.y = ApplicationInfo::screenHeight - pointStart.y;
-                pointEnd.y = ApplicationInfo::screenHeight - pointEnd.y;
-                ImGui::GetBackgroundDrawList()->AddLine({ pointStart.x, pointStart.y }, { pointEnd.x, pointEnd.y }, ImColor(255, 255, 255, 255), 1.5f);
-            }
-        }
-    }
-}
-
-auto CalculatePlayerData(Player* p) -> std::tuple<II::Vector3, II::Vector3, float, float> {
-    if (!p) return {};
-
-    auto playerPos = p->GetTransform()->GetPosition();
-    auto camera = II::Camera::GetMain();
-    if (!camera) return {};
-
-    auto cameraPos = camera->GetTransform()->GetPosition();
-    float distance = (playerPos - cameraPos).Length();
-    float scale = p->GetTransform()->GetLocalScale().Length();
-
-    return { playerPos, cameraPos, distance - scale, scale * 100.0f };
-}
-
-auto CalculateGhostData() -> std::tuple<II::Vector3, II::Vector3, float, float> {
-    auto ghost = Ghost::gCurrentGhost;
-    if (!ghost) return {};
-
-    auto ghostPos = ghost->GetTransform()->GetPosition();
-    auto camera = II::Camera::GetMain();
-    if (!camera) return {};
-
-    auto cameraPos = camera->GetTransform()->GetPosition();
-    float distance = (ghostPos - cameraPos).Length();
-    float scale = ghost->GetTransform()->GetLocalScale().Length();
-
-    return { ghostPos, cameraPos, distance - scale, scale * 100.0f };
-}
-
-void ManageEMFList() 
-{
-    std::vector<EMF*> toRemove{};
-    if (!Ghost::gCurrentGhost) {
-        return;
-    }
-
-    if (!ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA]) {
-        return;
-    }
-
-    if (!Ghost::emfData.empty()) {
-        auto now = std::chrono::steady_clock::now();
-
-        for (const auto& [emf, timestamp] : Ghost::emfData) {
-            if (emf) {
-                auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(now - timestamp).count();
-
-                FOR_EACH_COMPONENT(emf, II::Transform, "UnityEngine.CoreModule.dll", "Transform", pTransform) {
-                    if (pTransform) {
-                        const char* str = std::format("EMF ({})", 20 - seconds_passed).c_str();
-                        DrawTextFromPosition(str, pTransform->GetPosition());
-                    }
-                }
-
-                if (seconds_passed >= 20) {
-                    toRemove.push_back(emf);
+                if (startPoint.z > 0 && endPoint.z > 0) {
+                    startPoint.y = ApplicationInfo::screenHeight - startPoint.y;
+                    endPoint.y = ApplicationInfo::screenHeight - endPoint.y;
+                    drawList->AddLine(
+                        { startPoint.x, startPoint.y },
+                        { endPoint.x, endPoint.y },
+                        IM_COL32(255, 255, 255, 255),
+                        1.5f
+                    );
                 }
             }
         }
+    }
+}
 
-        for (EMF* emf : toRemove) {
-            if (emf) {
-                Ghost::emfData.erase(
-                    std::remove_if(Ghost::emfData.begin(), Ghost::emfData.end(),
-                        [emf](const auto& tuple) {
-                            return std::get<0>(tuple) == emf;
-                        }), Ghost::emfData.end());
+inline auto CalculateEntityData(auto* entity) -> std::tuple<II::Vector3, II::Vector3, float, float> {
+    if (!entity || !II::Camera::GetMain()) return {};
+
+    auto* transform = entity->GetTransform();
+    auto* camera = II::Camera::GetMain();
+
+    auto entityPos = transform->GetPosition();
+    auto cameraPos = camera->GetTransform()->GetPosition();
+    float distance = (entityPos - cameraPos).Length();
+    float scale = transform->GetLocalScale().Length();
+
+    return { entityPos, cameraPos, distance - scale, scale * 100.0f };
+}
+
+void ManageEMFList() {
+    if (!Ghost::gCurrentGhost || !ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA]) return;
+
+    auto now = std::chrono::steady_clock::now();
+    std::vector<EMF*> toRemove;
+
+    for (auto it = Ghost::emfData.begin(); it != Ghost::emfData.end();) {
+        auto& [emf, timestamp] = *it;
+        if (!emf) {
+            it = Ghost::emfData.erase(it);
+            continue;
+        }
+
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now - timestamp).count();
+        FOR_EACH_COMPONENT(emf, II::Transform, "UnityEngine.CoreModule.dll", "Transform", pTransform) {
+            if (pTransform) {
+                DrawTextFromPosition(std::format("EMF ({})", 20 - seconds), pTransform->GetPosition());
             }
         }
 
-        toRemove.clear();
+        if (seconds >= 20) {
+            it = Ghost::emfData.erase(it);
+        }
+        else {
+            ++it;
+        }
     }
 }
-extern DNAEvidence* pBone;
+
 void ManageBoneEv() {
-    if (Ghost::gCurrentGhost && pBone) 
-    {
-        auto pBoneObj = pBone->GetGameObject();
-        if (pBoneObj) {
-            auto pBoneTransform = pBoneObj->GetTransform();
-            if (pBoneTransform) {
-                DrawTextFromPosition("Bone", pBoneTransform->GetPosition());
+    if (Ghost::gCurrentGhost && pBone) {
+        if (auto* boneObj = pBone->GetGameObject()) {
+            if (auto* transform = boneObj->GetTransform()) {
+                DrawTextFromPosition("Bone", transform->GetPosition());
             }
         }
     }
 }
 
-void Gui::DoDrawFeatures()
-{
+void Gui::DoDrawFeatures() {
     auto currentFrameTime = std::chrono::high_resolution_clock::now();
     float deltaTime = std::chrono::duration<float>(currentFrameTime - lastFrameTime).count();
     lastFrameTime = currentFrameTime;
 
     ImGui::GetIO().DeltaTime = deltaTime;
 
-    static bool bInj = false;
-
-    if (!bInj) {
-        Gui::AddNotify("Phasmohook", "Successfully injected!\n\nPress 'Enter' key for Open Menu!", 3.5f, COLOR_WHITE, COLOR_DARK_BLUE);
-        bInj = true;
+    static bool bInjected = false;
+    if (!bInjected) {
+        AddNotify("Phasmohook", "Successfully injected!\n\nPress 'Enter' key for Open Menu!",
+            3.5f, COLOR_WHITE, COLOR_DARK_BLUE);
+        bInjected = true;
     }
 
-    // Hunt notifications
+    if (!Game::isOnMission || !Ghost::gCurrentGhost) return;
 
     if (ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES]) {
         static bool bHunting = false;
+        bool isHunting = Ghost::IsHunting();
 
-        if (Ghost::IsHunting() && !bHunting) {
-            Gui::AddNotify("[!] HUNTING START", "The ghost has started the hunt", 3.5f, COLOR_WHITE, COLOR_RED);
-            bHunting = true;
-        }
-
-        if (!Ghost::IsHunting() && bHunting) {
-            if (ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT]) {
-                ShowGhostModelForce(false); // fix visible ghost after hunt over
+        if (isHunting != bHunting) {
+            if (isHunting) {
+                AddNotify("[!] HUNTING START", "The ghost has started the hunt",
+                    3.5f, COLOR_WHITE, COLOR_RED);
             }
-            Gui::AddNotify("[!] HUNTING END", "The ghost stopped the hunt", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            bHunting = false;
+            else {
+                if (ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT]) {
+                    GhostUtils::ShowGhostModelForce(false);
+                }
+                AddNotify("[!] HUNTING END", "The ghost stopped the hunt",
+                    3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+            }
+            bHunting = isHunting;
         }
     }
 
-    notificationManager.render();
-
 #ifdef __USE__PLAYER_POOLS
-    if (!ApplicationInfo::bIsInLobby && ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK] && II::Camera::GetMain()) {
-        try {
-            for (int i = 0; i < MAX_PLAYERS; i++)
-            {
-                auto pPlayer = pPlayerPool->GetPlayer(i);
-                if (pPlayer) {
-                    auto playerObject = pPlayer->GetPlayer();
-                    auto playerName = pPlayer->GetName();
-
-                    if (playerObject && playerName)
-                    {
-                        if (!pPlayer->IsLocalPlayer() && Players::IsValidData(playerObject))
-                        {
-                            auto transform = playerObject->GetTransform();
-
-                            if (transform) {
-                                auto position = transform->GetPosition();
-
-                                Log(std::format("Drawing text for player: {}", playerName));
-                                DrawTextFromPosition(playerName, position);
-                            }
-                            else {
-                                Log(std::format("Player {} has invalid transform.", playerName));
+    if (ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK] && II::Camera::GetMain()) {
+        for (int i = 0; i < MAX_PLAYERS; ++i) {
+            if (auto* pPlayer = pPlayerPool->GetPlayer(i)) {
+                if (auto* playerObj = pPlayer->GetPlayer()) {
+                    if (auto* name = pPlayer->GetName()) {
+                        if (!pPlayer->IsLocalPlayer() && Players::IsValidData(playerObj)) {
+                            if (auto* transform = playerObj->GetTransform()) {
+                                DrawTextFromPosition(name, transform->GetPosition());
                             }
                         }
                     }
-                    else {
-                        Log(std::format("Player object or name is invalid for index: {}", i));
-                    }
                 }
             }
-        }
-        catch (const std::exception& e) {
-            Log(std::format("Exception in wallhack drawing loop: {}", e.what()));
-        }
-        catch (...) {
-            Log("Unknown exception in wallhack drawing loop.");
         }
     }
 #endif
 
-    //if (!ApplicationInfo::bIsInLobby) {
-        /*try {
-            if (Players::GetOnlinePlayersCount() > 0 && ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK]) {
-                for (int i = 0; i < Players::GetOnlinePlayersCount(); i++)
-                {
-                    Player* pPlayer = Players::GetPlayerById(i);
-                    if (Players::IsValidPlayer(pPlayer) && !Players::IsLocalPlayer(pPlayer))
-                    {
-                        auto [playerPos, playerCameraPos, playerDistance, playerBoxSizeMax] = CalculatePlayerData(pPlayer);
-                        FOR_EACH_COMPONENT(pPlayer, II::Animator, "UnityEngine.AnimationModule.dll", "Animator", pAnimator) {
-                            if (pAnimator) {
-                                DrawBoneConnections(pAnimator, playerDistance);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (const std::exception& e) {
-            Log(std::format("(Gui::DoDrawFeatures) Error: %s", e.what()));
-        }
-        catch (...) {
-            Log(std::format("(Gui::DoDrawFeatures) Error: %s", "Unknown"));
-        }*/
-   // }
-    
-
     ManageEMFList();
-    ManageBoneEv();
+    if (Game::IsSinglePlayer()) ManageBoneEv();
 
-    if (!ApplicationInfo::bIsInLobby && Ghost::gCurrentGhost && ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK]) {
-        auto [ghostPos, cameraPos, distance, boxSizeMax] = CalculateGhostData();
+    if (ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK]) {
+        auto [ghostPos, cameraPos, distance, boxSizeMax] = CalculateEntityData(Ghost::gCurrentGhost);
         FOR_EACH_COMPONENT(Ghost::gCurrentGhost, II::Animator, "UnityEngine.AnimationModule.dll", "Animator", pAnimator) {
-            if (pAnimator) {
-                DrawBoneConnections(pAnimator, distance);
-            }
+            if (pAnimator) DrawBoneConnections(pAnimator, distance);
         }
     }
 
-    if (Ghost::gCurrentGhost && ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW])
+    if (ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW])
     {
-        if (Ghost::GetInfo(Ghost::gCurrentGhost) && !ApplicationInfo::bIsInLobby)
+        if (Ghost::GetInfo(Ghost::gCurrentGhost))
         {
             auto DrawOutlinedText = [](const char* label, const char* text, ImVec2 position, ImU32 outlineColor = ImColor(0, 0, 0, 255), ImU32 textColor = ImColor(255, 255, 255, 255)) {
                 auto drawList = ImGui::GetWindowDrawList();
@@ -495,199 +459,358 @@ void Gui::DoDrawFeatures()
                 drawList->AddText(textPos, textColor, text);
                 };
 
-            ImGui::SetNextWindowSize(ImVec2(256, 256), ImGuiCond_Once);
 
-            ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
-
-            ImGui::Begin("#ghostInformation", nullptr, windowFlags);
-           
-            ImVec2 pos = ImGui::GetCursorScreenPos();
-
-            DrawOutlinedText("Ghost type: ", Ghost::GetTypeName(), pos);
-
-            pos.y += ImGui::GetTextLineHeight();
-
-            DrawOutlinedText("Ghost state: ", Ghost::GetStateName(), pos);
-
-            pos.y += ImGui::GetTextLineHeight();
 
             LevelRoom* pRoom = GetGhostFavouriteRoom();
-            DrawOutlinedText("Ghost room: ", pRoom ? Room::GetRoomName(pRoom) : "", pos);
+            if (pRoom) {
+                ImGui::SetNextWindowSize(ImVec2(1920, 1080), ImGuiCond_Once);
 
-            pos.y += ImGui::GetTextLineHeight();
+                ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoCollapse |
+                    ImGuiWindowFlags_NoBackground;
 
-            DrawOutlinedText("Temperature: ", pRoom ? std::format("{}", Room::GetRoomTemperature(pRoom)).c_str() : "None", pos);
+                // NOTE: dragging fix on disabled menu
+                if (ApplicationInfo::bMenuActive) {
+                    windowFlags &= ~ImGuiWindowFlags_NoMove;
+                } else {
+                    windowFlags |= ImGuiWindowFlags_NoMove;
+                }
 
-            pos.y += ImGui::GetTextLineHeight();
+                ImGui::Begin("#ghostInformation", nullptr, windowFlags);
 
-            DrawOutlinedText("Ghost name: ", Ghost::GetName(), pos);
+                ImVec2 pos = ImGui::GetCursorScreenPos();
 
-            ImGui::End();
+                DrawOutlinedText("Ghost info: ", "", pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+                DrawOutlinedText("Type: ", Ghost::GetTypeName(), pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+                if (Ghost::IsHunting()) {
+                    DrawOutlinedText("State: ", Ghost::GetStateName(), pos, ImColor(0, 0, 0, 255), ImColor(255, 0, 0, 255));
+                }
+                else DrawOutlinedText("State: ", Ghost::GetStateName(), pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+
+                DrawOutlinedText("Rroom: ", pRoom ? Room::GetRoomName(pRoom) : "", pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+                DrawOutlinedText("Temperature: ", pRoom ? std::format("{}", Room::GetRoomTemperature(pRoom)).c_str() : "None", pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+                DrawOutlinedText("Name: ", Ghost::GetName(), pos);
+
+                pos.y += ImGui::GetTextLineHeight();
+
+                bool bGhostEvent = Ghost::IsGhostEvent();
+                DrawOutlinedText("Event: ", std::format("{}", bGhostEvent ? "Yes" : "No").c_str(), pos, ImColor(0, 0, 0, 255), bGhostEvent ? ImColor(0, 255, 0, 255) : ImColor(255, 255, 255, 255));
+                
+                pos.y += ImGui::GetTextLineHeight();
+
+                bool bIncest = Ghost::IncenseEffect();
+                DrawOutlinedText("Incense: ", std::format("{}", bIncest ? "Yes" : "No").c_str(), pos, ImColor(0, 0, 0, 255), bIncest ? ImColor(0, 255, 0, 255) : ImColor(255, 255, 255, 255));
+
+                if (void* pLocal = PhotonHelper::GetLocalPlayer())
+                {
+                    II::String* name = PhotonHelper::GetRPNickName(pLocal);
+                    if (name) {
+                        pos.y += ImGui::GetTextLineHeight();
+                        DrawOutlinedText("Your name: ", std::format("{}", name->ToString()).c_str(), pos);
+                    }
+                }
+
+                /*pos.y += ImGui::GetTextLineHeight();
+
+               
+                char bufferState[0xFF]{};
+                sprintf(bufferState, "%s", Ghost::GetHexBytes(0xE0, 0xFF).c_str());
+                DrawOutlinedText("GhostAI hex: ", bufferState, pos);*/
+
+                ImGui::End();
+            }
         }
     }
 }
 
 void Gui::RenderSideBar() {
-    static float buttonHeight = 45.0f;
-    
-    auto createButton = [&](const char* label, int page) {
-        if (selectedPage == page) {
-            ImGui::PushStyleColor(ImGuiCol_Button, COLOR_RED);
-        }
+    static constexpr float buttonHeight = 45.0f;
+    static const std::array<std::pair<const char*, int>, 3> buttons = { {
+        {"Player", 0}, {"Ghost", 1}, {"Preferences", 2}
+    } };
 
-        if (ImGui::Button(label, ImVec2(-1, buttonHeight))) {
-            selectedPage = page;
-        }
-
-        if (selectedPage == page)
-            ImGui::PopStyleColor(); // Restore color
-        };
-
-    // Create buttons using the lambda
-    createButton("Player", 0);
-    createButton("Ghost", 1);
-    createButton("Preferences", 2);
+    for (const auto& [label, page] : buttons) {
+        if (selectedPage == page) ImGui::PushStyleColor(ImGuiCol_Button, COLOR_RED);
+        if (ImGui::Button(label, ImVec2(-1, buttonHeight))) selectedPage = page;
+        if (selectedPage == page) ImGui::PopStyleColor();
+    }
 }
 
-void Gui::RenderMainContent() 
-{
+#include <set>
+std::vector<std::string> GetUniqueLightNames() {
+    std::set<std::string> uniqueNames;
+    std::vector<std::string> result;
+
+    auto* mainCamera = II::Camera::GetMain();
+    if (mainCamera) {
+        auto lights = II::Light::FindAll();
+        if (!lights.empty()) {
+            for (auto* light : lights) {
+                if (light) {
+                    auto* obj = light->GetGameObject();
+                    if (obj) {
+                        std::string stringObjName = std::format("{}", obj->GetName()->ToString());
+                        uniqueNames.insert(stringObjName);
+                    }
+                }
+            }
+        }
+    }
+
+    result.assign(uniqueNames.begin(), uniqueNames.end());
+    return result;
+}
+
+void Gui::RenderMainContent() {
+    static const std::array<std::pair<const char*, int>, 4> ghostCheats = { {
+           {"Ghost Wallhack", CHEAT_GHOST_WALLHACK},
+           {"Hunt notifications", CHEAT_HUNT_NOTIFIES},
+           {"Ghost info show", CHEAT_GHOST_INFO_SHOW},
+           {"EMF Show", CHEAT_EMF_DATA}
+           
+           /*,
+           {"Ghost Model Show", CHEAT_GHOST_MODEL_SHOW},
+           {"Visible Ghost Hunt", CHEAT_VISIBLE_GHOST_AT_HUNT}*/
+       } };
+
+    static const ImVec4 titleColor(0.7f, 0.9f, 0.7f, 1.0f);
+
+    static char lightName[128] = "Directional";
+    static float brightness = 20.0f;
+    static float range = 10.0f;
+
+    std::vector<std::string> lightNames = GetUniqueLightNames();
+    static int selectedLightIndex = 0;
+
     switch (selectedPage) {
-        default: {
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "About");
-            ImGui::Separator();
-            ImGui::Text("PHASMOHOOK - RELEASE - 1.0.1 - BLACK\nThanks for download\nBy 0xcds4r");
-            break;
+    case 0: // Player
+        ImGui::TextColored(titleColor, "Game Player / Cheats");
+        ImGui::Separator();
+        if (ImGui::Checkbox("Disable Stamina", &ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA])) {
+            AddNotify("Disable Stamina",
+                ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA] ? "Toggle: Enabled" : "Toggle: Disabled",
+                3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
         }
 
-        case 0: {
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "Game Player / Cheats");
-            ImGui::Separator();
-
-            if (ImGui::Checkbox("Disable Stamina", &ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA])) {
-                Gui::AddNotify("Disable Stamina", ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }
-
-            /*if (ImGui::Checkbox("Players Wallhack", &ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK])) {
-                Gui::AddNotify("Players Wallhack", ApplicationInfo::bCheatEnabled[CHEAT_PLAYERS_WALLHACK] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }*/
-
 #ifdef __USE__PLAYER_POOLS
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "Online Players");
-            ImGui::Separator();
-
-            try {
-                for (int i = 0; i < MAX_PLAYERS; i++)
-                {
-                    auto pPlayer = pPlayerPool->GetPlayer(i);
-                    if (pPlayer) {
-                        if (pPlayer->GetPlayer() && pPlayer->GetName() && Players::IsValidData(pPlayer->GetPlayer()))
-                        {
-                            ImGui::Text("[%d] %s %s", pPlayerPool->GetID(pPlayer->GetPlayer()), pPlayer->GetName(), pPlayer->IsLocalPlayer() ? "(YOU)" : "");
+        ImGui::TextColored(titleColor, "Online Players");
+        ImGui::Separator();
+        for (int i = 0; i < MAX_PLAYERS; ++i) {
+            if (auto* pPlayer = pPlayerPool->GetPlayer(i)) {
+                if (auto* player = pPlayer->GetPlayer()) {
+                    if (auto* name = pPlayer->GetName()) {
+                        if (Players::IsValidData(player)) {
+                            ImGui::Text("[%d] %s %s",
+                                pPlayerPool->GetID(player),
+                                name,
+                                pPlayer->IsLocalPlayer() ? "(YOU)" : "");
                         }
                     }
                 }
             }
-            catch (const std::exception& e) {
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
-            }
-            catch (...) {
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Unknown error occurred");
-            }
+        }
 #endif
-            break;
+        break;
+
+    case 1: // Ghost
+        ImGui::TextColored(titleColor, "Ghost / Cheats");
+        ImGui::Separator();
+
+        for (const auto& [label, cheatId] : ghostCheats) {
+            if (ImGui::Checkbox(label, &ApplicationInfo::bCheatEnabled[cheatId])) {
+                AddNotify(label,
+                    ApplicationInfo::bCheatEnabled[cheatId] ? "Toggle: Enabled" : "Toggle: Disabled",
+                    3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+                if (cheatId == CHEAT_GHOST_MODEL_SHOW) {
+                    GhostUtils::ShowGhostModelForce(ApplicationInfo::bCheatEnabled[cheatId]);
+                }
+            }
         }
 
+        ImGui::TextColored(titleColor, "Ghost / Information");
+        ImGui::Separator();
 
-        case 1: {
+        if (!Game::isOnMission) {
+            ImGui::Text("You must be in game for see it :)");
+        }
+        else if (auto* pRoom = GetGhostFavouriteRoom()) {
+            ImGui::Text("Name: %s", Ghost::GetName());
+            ImGui::Text("Type: %s", Ghost::GetTypeName());
+            ImGui::Text("State: %s", Ghost::GetStateName());
+            ImGui::Text("Gender: %s", Ghost::GetSex());
+            ImGui::Text("Age: %d", Ghost::GetAge());
+            ImGui::Text("Fav. Room: %s", Room::GetRoomName(pRoom));
+        }
+        break;
 
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "Ghost / Cheats");
-            ImGui::Separator();
+    case 2: // Preferences
+        ImGui::TextColored(titleColor, "Preferences");
+        ImGui::Separator();
 
-            if (ImGui::Checkbox("Ghost Wallhack", &ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK])) {
-                Gui::AddNotify("Ghost Wallhack", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+        if (!lightNames.empty()) {
+            if (ImGui::Combo("Light Name Selector", &selectedLightIndex, [](void* data, int idx, const char** out_text) {
+                auto& vec = *static_cast<std::vector<std::string>*>(data);
+                *out_text = vec[idx].c_str();
+                return true;
+                }, &lightNames, lightNames.size())) {
+                strncpy_s(lightName, lightNames[selectedLightIndex].c_str(), sizeof(lightName) - 1);
+                lightName[sizeof(lightName) - 1] = '\0'; 
             }
+        }
+        else {
+            ImGui::Text("No lights found");
+        }
 
-            if (ImGui::Checkbox("Hunt notifications", &ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES])) {
-                Gui::AddNotify("Hunt notifications", ApplicationInfo::bCheatEnabled[CHEAT_HUNT_NOTIFIES] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }
+        ImGui::InputText("Light Name", lightName, sizeof(lightName));
 
-            if (ImGui::Checkbox("Ghost info show", &ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW])) {
-                Gui::AddNotify("Ghost info show", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_INFO_SHOW] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }
+        ImGui::Text("Brightness");
+        ImGui::SameLine();
+        if (ImGui::Button("-##BrightnessMinus")) {
+            brightness -= 0.1f;
+            if (brightness < 0.0f) brightness = 0.0f; 
+        }
+        if (ImGui::IsItemActive() && ImGui::GetIO().MouseDownDuration[0] > 0.1f) {
+            brightness -= 0.1f;
+            if (brightness < 0.0f) brightness = 0.0f;
+        }
+        ImGui::SameLine();
+        ImGui::SliderFloat("##Brightness", &brightness, 0.0f, 255.0f, "%.1f");
+        ImGui::SameLine();
+        if (ImGui::Button("+##BrightnessPlus")) {
+            brightness += 0.1f;
+            if (brightness > 255.0f) brightness = 255.0f;
+        }
+        if (ImGui::IsItemActive() && ImGui::GetIO().MouseDownDuration[0] > 0.1f) {
+            brightness += 0.1f;
+            if (brightness > 255.0f) brightness = 255.0f;
+        }
 
-            if (ImGui::Checkbox("EMF Show", &ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA])) {
-                Gui::AddNotify("EMF Show", ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }
+        ImGui::Text("Range");
+        ImGui::SameLine();
+        if (ImGui::Button("-##RangeMinus")) {
+            range -= 0.1f;
+            if (range < 0.0f) range = 0.0f; 
+        }
+        if (ImGui::IsItemActive() && ImGui::GetIO().MouseDownDuration[0] > 0.1f) { 
+            range -= 0.1f;
+            if (range < 0.0f) range = 0.0f;
+        }
+        ImGui::SameLine();
+        ImGui::SliderFloat("##Range", &range, 0.0f, 100000.0f, "%.1f");
+        ImGui::SameLine();
+        if (ImGui::Button("+##RangePlus")) {
+            range += 0.1f;
+            if (range > 100000.0f) range = 100000.0f;
+        }
+        if (ImGui::IsItemActive() && ImGui::GetIO().MouseDownDuration[0] > 0.1f) {
+            range += 0.1f;
+            if (range > 100000.0f) range = 100000.0f;
+        }
 
-            if (ImGui::Checkbox("Ghost Model Show", &ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW])) {
-                Gui::AddNotify("Ghost Model Show", ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-                ShowGhostModelForce(ApplicationInfo::bCheatEnabled[CHEAT_GHOST_MODEL_SHOW]);
-            }
+        if (ImGui::Button("Apply")) {
+            SetSpecificLightBrightness(lightName, brightness, range);
+        }
 
-            if (ImGui::Checkbox("Visible Ghost Hunt", &ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT])) {
-                Gui::AddNotify("Visible Ghost Hunt", ApplicationInfo::bCheatEnabled[CHEAT_VISIBLE_GHOST_AT_HUNT] ? "Toggle: Enabled" : "Toggle: Disabled", 3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
-            }
+       /* if (ImGui::Button("Super FlashLight")) 
+        {
+            if(defBright_Light == 0.0f && defRange_Light == 0.0f)
+                GetSpecificLightBrightness("Light", &defBright_Light, &defRange_Light);
 
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "Ghost / Information");
-            ImGui::Separator();
-
-            if (ApplicationInfo::bIsInLobby) {
-                ImGui::Text("You must be in game for see it :)");
+            ApplicationInfo::bCheatEnabled[CHEAT_SUPERFLASHLIGHT] = !ApplicationInfo::bCheatEnabled[CHEAT_SUPERFLASHLIGHT];
+            if (ApplicationInfo::bCheatEnabled[CHEAT_SUPERFLASHLIGHT]) {
+                SetSpecificLightBrightness("Light", 255.0f, 50.0f);
             }
             else 
             {
-                ImGui::Text("Name: %s", Ghost::GetName());
-                ImGui::Text("Type: %s", Ghost::GetTypeName());
-                ImGui::Text("State: %s", Ghost::GetStateName());
-                ImGui::Text("Gender: %s", Ghost::GetSex());
-                ImGui::Text("Age: %d", Ghost::GetAge());
-                
-                LevelRoom* pRoom = GetGhostFavouriteRoom();
-                ImGui::Text("Fav. Room: %s", pRoom ? Room::GetRoomName(pRoom) : "");
+                SetSpecificLightBrightness("Light", defBright_Light, defRange_Light);
             }
-            
-            break;
+
+            AddNotify("Super FlashLight",
+                ApplicationInfo::bCheatEnabled[CHEAT_SUPERFLASHLIGHT] ? "Toggle: Enabled" : "Toggle: Disabled",
+                3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+        }*/
+
+        if (ImGui::Button("Full Bright"))
+        {
+            ApplicationInfo::bCheatEnabled[CHEAT_FULLBRIGHT] = !ApplicationInfo::bCheatEnabled[CHEAT_FULLBRIGHT];
+
+            if (defBright_Light == 0.0f && defRange_Light == 0.0f)
+                GetSpecificLightBrightness("Light", &defBright_Light, &defRange_Light);
+
+            if (defBright_PCAreaLight == 0.0f && defRange_PCAreaLight == 0.0f)
+                GetSpecificLightBrightness("PCAreaLight", &defBright_PCAreaLight, &defRange_PCAreaLight);
+
+            if (defBright_DirectionalLight == 0.0f && defRange_DirectionalLight == 0.0f)
+                GetSpecificLightBrightness("DirectionalLight", &defBright_DirectionalLight, &defRange_DirectionalLight);
+
+            if (ApplicationInfo::bCheatEnabled[CHEAT_FULLBRIGHT]) {
+                SetSpecificLightBrightness("Light", 255.0f, 50.0f);
+                SetSpecificLightBrightness("PCAreaLight", 255.0f, 50.0f);
+                SetSpecificLightBrightness("Directional Light", 0.1f, 0.1f);
+            }
+            else
+            {
+                SetSpecificLightBrightness("Light", defBright_Light, defRange_Light);
+                SetSpecificLightBrightness("PCAreaLight", defBright_PCAreaLight, defRange_PCAreaLight);
+                SetSpecificLightBrightness("Directiona Light", defBright_DirectionalLight, defRange_DirectionalLight);
+            }
+
+            AddNotify("Super FlashLight",
+                ApplicationInfo::bCheatEnabled[CHEAT_FULLBRIGHT] ? "Toggle: Enabled" : "Toggle: Disabled",
+                3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
         }
 
-        case 2: {
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 0.7f, 1.0f), "Preferences");
-            ImGui::Separator();
-            break;
-        }
+        break;
+
+    default:
+        ImGui::TextColored(titleColor, "About");
+        ImGui::Separator();
+        ImGui::Text("PHASMOHOOK - RELEASE - 1.2 - BLACK\nThanks for download\nBy 0xcds4r");
+        break;
     }
-
-   
 }
 
-void Gui::RenderMainWindow()
-{
-    if (!ApplicationInfo::bMenuActive) {
-        return;
-    }
+void Gui::GlobalDraw() {
+    RenderMainWindow();
+    DoDrawFeatures();
+    notificationManager.render();
+}
 
+void Gui::RenderMainWindow() {
+    if (!ApplicationInfo::bMenuActive) return;
 
     ImGuiIO& io = ImGui::GetIO();
-
-    ImVec2 screenCenter(io.DisplaySize.x / 2.0f, io.DisplaySize.y / 2.0f);
-    static ImVec2 windowSize(io.DisplaySize.x * 0.4925f, io.DisplaySize.y * 0.47f);
-
-    static ImVec2 windowPos(screenCenter.x - windowSize.x / 2.0f, screenCenter.y - windowSize.y / 2.0f);
+    ImVec2 windowSize(io.DisplaySize.x * 0.4925f, io.DisplaySize.y * 0.47f);
+    ImVec2 windowPos((io.DisplaySize.x - windowSize.x) * 0.5f, (io.DisplaySize.y - windowSize.y) * 0.5f);
 
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Once);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_Once);
-    
-    if (ImGui::Begin("Phasmohook", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse)) 
-    {
+
+    if (ImGui::Begin("Phasmohook", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse)) {
         ImGui::BeginChild("Sidebar", ImVec2(150, -1), true);
-            RenderSideBar();
+        RenderSideBar();
         ImGui::EndChild();
 
         ImGui::SameLine();
-
         ImGui::BeginChild("MainContent", ImVec2(-1, -1), true);
-            RenderMainContent();
+        RenderMainContent();
         ImGui::EndChild();
-
-        ImGui::End();
     }
+    ImGui::End();
 }

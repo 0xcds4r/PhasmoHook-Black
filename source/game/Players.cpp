@@ -98,7 +98,7 @@ const char* Players::GetCurrentRoomName(Player* player) {
 
 inline auto UNITY_CALLING_CONVENTION Players::HAwake(Player* _this) -> void
 {
-	Log("Players::HAwake");
+	//Log("Players::HAwake");
 	
 	H::Fcall(HAwake, _this);
 
@@ -157,7 +157,7 @@ inline auto UNITY_CALLING_CONVENTION Players::HUpdate(Player* _this) -> void
 
 inline auto UNITY_CALLING_CONVENTION Players::HOnDestroy(Player* _this) -> void
 {
-	Log("Players::HOnDestroy");
+	//Log("Players::HOnDestroy");
 #ifdef __USE__PLAYER_POOLS
 	if (pPlayerPool && Players::IsValidData(_this)) {
 		pPlayerPool->UnregisterPlayer(_this);

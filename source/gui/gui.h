@@ -13,6 +13,8 @@ ImVec4 HexToRGBA(const std::string& hex);
 #define CHEAT_EMF_DATA 5
 #define CHEAT_GHOST_MODEL_SHOW 6
 #define CHEAT_VISIBLE_GHOST_AT_HUNT 7
+#define CHEAT_FULLBRIGHT 8
+#define CHEAT_SUPERFLASHLIGHT 9
 
 #define COLOR_WHITE          HexToRGBA("FFFFFFFF")
 #define COLOR_DARK_BLUE      HexToRGBA("1A1A3DFF")  
@@ -36,18 +38,17 @@ public:
 
     char ProcessInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-    void RenderMainWindow();
+    void GlobalDraw();
 
     static void AddNotify(const std::string& title, const std::string& message, float displayTime = 3.5f, ImColor textColor = ImColor(255, 255, 255, 255), ImColor bgColor = ImColor(40, 40, 40, 255));
 
     void updateLoop(std::chrono::steady_clock::time_point time);
-
-    void DoDrawFeatures();
-
     void RenderSideBar();
-
     void RenderMainContent();
 protected:
     uint8_t selectedPage = -1;
     
+private:
+    void RenderMainWindow();
+    void DoDrawFeatures();
 };
