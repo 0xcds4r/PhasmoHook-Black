@@ -1,0 +1,6 @@
+
+*.ipch
+.vs
+.sarif
+Build
+/Inject & launcher/obj

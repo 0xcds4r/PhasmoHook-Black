@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "Новый профиль",
+    "Projects": [
+      {
+        "Path": "PhasmoHookInjector\\PhasmoHookInjector.vcxproj",
+        "Action": "StartWithoutDebugging",
+        "DebugTarget": "Локальный отладчик Windows"
+      }
+    ]
+  }
+]
