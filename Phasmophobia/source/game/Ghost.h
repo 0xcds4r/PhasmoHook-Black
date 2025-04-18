@@ -5,7 +5,7 @@ class Ghost
 public:
 	static void Init();
 	static void Reset();
-	static GhostAI::State GetState(GhostAI* _this);
+	static GhostAI::States GetState(GhostAI* _this);
 	static void* GetGhostModel(GhostAI* _this);
 	static GhostInfo* GetInfo(GhostAI* _this);
 	static const char* GetTypeNameRus();

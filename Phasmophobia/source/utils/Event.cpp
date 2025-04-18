@@ -3,11 +3,8 @@
 
 auto GetGhostCurrentRoom() -> LevelRoom* 
 {
-    if (LevelController::instance && Game::isOnMission) 
-    {
-        if (LevelController::instance->StartingRoom) {
-            return LevelController::instance->GhostRoom;
-        }
+    if (LevelController::instance && Game::isOnMission) {
+        return LevelController::instance->currentGhostRoom;
     }
 
     return nullptr;

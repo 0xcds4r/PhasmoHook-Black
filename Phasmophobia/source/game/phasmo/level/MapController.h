@@ -1,5 +1,7 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class MapController : II::MonoBehaviour {
 public:
     struct Floor {
@@ -10,7 +12,7 @@ public:
     void* playerIcons;
     II::List<Player*>* players;
     Floor* allFloors;
-    int currentFloorIndex; // Offset: 0x38 
+    int index; // Offset: 0x38 
     float iconScale; // Offset: 0x3C
     float playerIconScale; // Offset: 0x40
     void* motionSensorData; // Offset: 0x48

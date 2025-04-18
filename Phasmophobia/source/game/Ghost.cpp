@@ -23,7 +23,7 @@ const char* GetGhostTypeStringRus(GhostTraits::GhostType type) {
     return (it != GhostTypeNamesRus.end()) ? it->second : "Неизвестный";
 }
 
-const char* GetGhostStateString(GhostAI::State state) {
+const char* GetGhostStateString(GhostAI::States state) {
     auto it = GhostStateNames.find(state);
     return (it != GhostStateNames.end()) ? it->second : "Unknown";
 }
@@ -38,9 +38,9 @@ const char* GetEMFGhostActionTypeNames(EMFGhostActionType action) {
     return (it != EMFGhostActionTypeNames.end()) ? it->second : "Unknown";
 }
 
-GhostAI::State Ghost::GetState(GhostAI* _this) {
-    if (!_this) return GhostAI::State::idle;
-    return _this->state;
+GhostAI::States Ghost::GetState(GhostAI* _this) {
+    if (!_this) return GhostAI::States::idle;
+    return _this->currentState;
 }
 
 void* Ghost::GetGhostModel(GhostAI* _this) {
@@ -55,7 +55,7 @@ GhostInfo* Ghost::GetInfo(GhostAI* _this) {
 }
 
 bool Ghost::IncenseEffect() {
-    return Ghost::gCurrentGhost->bIncensed; // when using incense it sets to 1
+    return Ghost::gCurrentGhost->delayedBySmudgeStick; // when using incense it sets to 1
 }
 
 const char* Ghost::GetBansheeTargetNickname()
@@ -68,7 +68,7 @@ const char* Ghost::GetBansheeTargetNickname()
 }
 
 bool Ghost::IsGhostEvent() {
-    return Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::State::randomEvent; // new offset
+    return Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::States::randomEvent; // new offset
 }
 
 bool Ghost::IsHunting() {
@@ -84,8 +84,8 @@ const char* Ghost::GetName()
 {
     if (Ghost::gCurrentGhost) {
         auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
-        if (pInfo && pInfo->ghostTraits.ghostName) {
-            return pInfo->ghostTraits.ghostName->ToString().c_str();
+        if (pInfo && pInfo->ghostTraits.GhostName) {
+            return pInfo->ghostTraits.GhostName->ToString().c_str();
         }
     }
     return "None";
@@ -132,7 +132,7 @@ int Ghost::GetAge() {
     if (Ghost::gCurrentGhost) {
         auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
         if (pInfo) {
-            return pInfo->ghostTraits.age;
+            return pInfo->ghostTraits.ghostAge;
         }
     }
     return -1;
@@ -256,7 +256,7 @@ const char* Ghost::GetSex() {
     if (Ghost::gCurrentGhost) {
         auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
         if (pInfo) {
-            return pInfo->ghostTraits.bIsMale ? "Male" : "Female";
+            return pInfo->ghostTraits.isMale ? "Male" : "Female";
         }
     }
     return "None";

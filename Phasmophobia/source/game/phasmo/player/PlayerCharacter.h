@@ -1,12 +1,14 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class PlayerCharacter : public II::MonoBehaviourPun {
 public:
-	bool specialState;
-	II::MeshRenderer* pMeshRender;
-	II::GameObject* pGameObject;
-	II::Transform* pTransform;
-	void* _LegacyBadge;
-	void* _PrestigeBadge;
+	bool isMaleCharacter;
+	II::MeshRenderer* vrRadio;
+	II::GameObject* headphones;
+	II::Transform* headAttach;
+	void* legacyBadge;
+	void* prestigeBadge;
 };
 VALIDATE_SIZE(PlayerCharacter, 0x48 + STRUCT_STUCK);

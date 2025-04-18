@@ -43,33 +43,41 @@ public:
 
 class EMF : public II::MonoBehaviour {
 public:
-    void* pEvidence;
-    int field1;
-    int field2;
-    EMFGhostActionEv ghostAction;
-    EMFGhostActionType ghostActionType;
-    float field3;
+    void* emfEvidence;
+    int strength;
+    int strengthOffset;
+    EMFGhostActionEv ghostAction; // int32_t type;
+    EMFGhostActionType ghostActionType; // int32_t emfInteractionType;
+    float timerUntilDeath;
 };
 VALIDATE_SIZE(EMF, 0x30 + STRUCT_STUCK);
 
-class DNAEvidence : public II::MonoBehaviour {
+class DNAEvidence : public II::MonoBehaviourPun {
 public:
-    void* pData;
+    void* photonInteract;
+    II::Transform* losTarget;
+    II::Rigidbody* rigid;
+    void* meshFilter;
+    void* meshCollider;
+    LevelRoom* levelRoom;
+    II::List<II::Mesh*>* boneMeshes;
+    void* collectable;
 };
+VALIDATE_SIZE(DNAEvidence, 0x58 + STRUCT_STUCK);
 
 class EvidenceController : public II::MonoBehaviour {
 public:
-    void* skip1;
-    void* skip2;
-    void* skip3;
-    DNAEvidence* pDNAEvidence;
-    void* ghostOrb;
-    void* skip4;
-    void* skip5;
-    bool unknownBool1;
-    float unknownFlt1;
-    void* skip6;
-    II::Color unkColor;
+    II::List<void*>* evidenceInLevel;
+    II::List<LevelRoom*>* roomsToSpawnDNAEvidenceInside;
+    void* photonView;
+    DNAEvidence* bone;
+    II::Transform* ghostOrb;
+    void* ghostOrbRenderer;
+    LevelController* levelController;
+    bool isFreezingTemperatureGhost;
+    float dotsCheckTimer;
+    II::List<void*>* activeFingerprints;
+    II::Color foggyOrbColor;
 };
 VALIDATE_SIZE(EvidenceController, 0x68 + STRUCT_STUCK);
 

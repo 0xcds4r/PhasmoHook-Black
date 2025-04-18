@@ -648,7 +648,7 @@ void Gui::ManageGhostWallhack()
                 bool bGhostEvent = Ghost::IsGhostEvent();
                 bool bHunt = Ghost::IsHunting();
                 bool bIncense = Ghost::IncenseEffect();
-                bool bUsingAbility = Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::State::GhostAbility;
+                bool bUsingAbility = Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::States::GhostAbility;
 
                 if (bGhostEvent) {
                     DrawBoneConnectionsEx(pAnimator, 0, 255, 0, 255);
@@ -1023,13 +1023,12 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
     }
     else
     {
-        if (Ghost::GetInfo(Ghost::gCurrentGhost))
+        if (Ghost::GetInfo(Ghost::gCurrentGhost) && Network::GetInstance())
         {
-            auto pLocalPlayer = Players::GetLocalPlayer();
+            auto pLocalPlayer = Network::GetInstance()->GetLocalPlayer();
             if (pLocalPlayer) {
-                auto player = pLocalPlayer->GetPlayer();
-                if (player) {
-                    auto room = player->pRoom;
+                if (pLocalPlayer) {
+                    auto room = pLocalPlayer->currentRoom;
                     if (room) {
                         II::String* roomName = room->roomName;
                         if (roomName) {
@@ -1037,7 +1036,7 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
                         }
                     }
 
-                    ImGui::Text("Name: %s", pLocalPlayer->GetName());
+                    //ImGui::Text("Name: %s", Players::GetNickname(pLocalPlayer));
                 }
             }
         }
@@ -1414,44 +1413,22 @@ void Gui::RenderConsolePage(const ImVec4& titleColor) {
 
 void Gui::ProcessCheats() 
 {
-    static bool bWantsToReset = false;
-
     if (ApplicationInfo::bCheatEnabled[CHEAT_PLAYERSPEED]) 
     {
         if (auto netInstance = Network::GetInstance())
         {
             if (auto localPlayer = netInstance->GetLocalPlayer())
             {
-                if (localPlayer->firstPersonController->m_fSpeed != ApplicationInfo::fPlayerSpeed) 
+                if (localPlayer->firstPersonController->currentSpeed != ApplicationInfo::fPlayerSpeed) 
                 {
-                    if (localPlayer->firstPersonController->IsSprinting) 
+                    if (localPlayer->firstPersonController->m_IsSprinting) 
                     {
-                        localPlayer->firstPersonController->m_fSpeed = 1.40f + ApplicationInfo::fPlayerSpeed;
+                        localPlayer->firstPersonController->currentSpeed = 1.40f + ApplicationInfo::fPlayerSpeed;
                     }
                     else 
                     {
-                        localPlayer->firstPersonController->m_fSpeed = ApplicationInfo::fPlayerSpeed;
+                        localPlayer->firstPersonController->currentSpeed = ApplicationInfo::fPlayerSpeed;
                     }
-                    bWantsToReset = true;
-                }
-            }
-        }
-    }
-    else {
-        if (bWantsToReset) {
-            if (auto netInstance = Network::GetInstance())
-            {
-                if (auto localPlayer = netInstance->GetLocalPlayer())
-                {
-                    if (localPlayer->firstPersonController->IsSprinting)
-                    {
-                        localPlayer->firstPersonController->m_fSpeed = 3.00f;
-                    }
-                    else
-                    {
-                        localPlayer->firstPersonController->m_fSpeed = 1.60f;
-                    }
-                    bWantsToReset = false;
                 }
             }
         }

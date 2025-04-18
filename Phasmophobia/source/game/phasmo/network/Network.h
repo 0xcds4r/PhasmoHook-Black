@@ -50,34 +50,34 @@ public:
 
     // ----------------------------------------------------------
     Player* localPlayer; // Offset: 0x28
-    II::List<PlayerSpot*>* playerSpots; // Offset: 0x30
+    II::List<PlayerSpot*>* playersData; // Offset: 0x30
     void* playerColors; // Offset: 0x38
-    void* defaultColors; // Offset: 0x40
-    void* onPlayerConnected; // Offset: 0x48
-    void* onPlayerDisconnected; // Offset: 0x50
-    void* onRoomJoined; // Offset: 0x58
-    void* onRoomLeft; // Offset: 0x60
-    void* onRegionChanged; // Offset: 0x68
-    void* onPlayerVoiceConnected; // Offset: 0x70
-    void* onPlayerVoiceDisconnected; // Offset: 0x78
-    void* onPlayerMuted; // Offset: 0x80
-    void* onPlayerUnmuted; // Offset: 0x88
-    void* onServerConnected; // Offset: 0x90
-    void* onServerDisconnected; // Offset: 0x98
-    void* onColorChanged; // Offset: 0xA0, 
+    void* defaultPlayerColors; // Offset: 0x40
+    void* JoinedLobby; // Offset: 0x48
+    void* JoinedRoom; // Offset: 0x50
+    void* LeftRoom; // Offset: 0x58
+    void* Disconnected; // Offset: 0x60
+    void* OnMicrophoneChanged; // Offset: 0x68
+    void* OnMasterClientSwitchedEvent; // Offset: 0x70
+    void* OnPlayerEnteredRoomEvent; // Offset: 0x78
+    void* OnPlayerLeftRoomEvent; // Offset: 0x80
+    void* OnPlayerSpotAssigned; // Offset: 0x88
+    void* OnLocalPlayerSpawned; // Offset: 0x90
+    void* OnSeasonalEventCompleted; // Offset: 0x98
+    void* OnPlayerColorChanged; // Offset: 0xA0, 
     //const uint8_t eventCode = 1; // Offset: 0xA4 
-    void* networkClient; // Offset: 0xA8
-    bool isConnected; // Offset: 0xB0
-    II::String* currentRegion; // Offset: 0xB8
-    void* availableRegions; // Offset: 0xC0
-    bool isChangingRegion; // Offset: 0xC8
-    bool isDisconnecting; // Offset: 0xC9
-    void* connectionState; // Offset: 0xD0
-    bool isVoiceConnected; // Offset: 0xD8
-    II::String* voiceRegion; // Offset: 0xE0 
+    void* m_levelSystem; // Offset: 0xA8
+    bool isChangingScenes; // Offset: 0xB0
+    II::String* lastOnlineRoomName; // Offset: 0xB8
+    void* recentKickedFromRooms; // Offset: 0xC0
+    bool failedToConnectToVivox; // Offset: 0xC8
+    bool isAttemptingVivoxLogin; // Offset: 0xC9
+    void* inviteSystem; // Offset: 0xD0
+    bool isChangingRegion; // Offset: 0xD8
+    II::String* changeToRegionOnDisconnect; // Offset: 0xE0 
 
     auto GetPlayerSpots() -> std::vector<PlayerSpot*> {
-        return Network::GetInstance()->playerSpots->ToArray()->ToVector();
+        return Network::GetInstance()->playersData->ToArray()->ToVector();
     }
 
     auto GetLocalPlayer() -> Player* {

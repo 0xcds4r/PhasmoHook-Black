@@ -6,68 +6,67 @@
 
 class Player : public II::MonoBehaviour {
 public:
-	void* photonView; // 0x20
-	bool isDead; // 0x28
-	bool field2; // 0x29
-	char byte1; // skip byte
-	char byte2; // skip byte
-	int field3;
+	void* photonView; 
+	bool isDead; 
+	bool isDyingLocally;
+	int modelID;
 	PlayerCharacter* playerCharacter;
-	ClosetZone* closetZone;
-	II::GameObject* pGameObject;
-	II::Transform* pTransform;
-	void* keyInfo;
-	II::Camera* pCamera;
-	LevelRoom* pRoom;
-	II::Transform* pTransform2;
-	void* photonObjInteract;
-	void* photonObjInteract2;
-	II::GameObject** gameObjects;
-	II::GameObject* pGameObject2;
-	void* layerMask;
-	void* _socket;
-	II::Transform* pTransform3;
-	II::GameObject* pGameObject3;
+	ClosetZone* closet;
+	II::GameObject* headObject;
+	II::Transform* trackedHead;
+	void* keys;
+	II::Camera* cam;
+	LevelRoom* currentRoom;
+	II::Transform* mapIcon;
+	void* rightCurrentHeldObject;
+	void* leftCurrentHeldObject;
+	II::GameObject** characterModels;
+	II::GameObject* ghostDeathHands;
+	void* ghostRaycastMask;
+	void* headSocket;
+	void* losTargets;
+	II::Transform* aiTargetPoint;
+	II::GameObject* deadBodyPrefab;
 	void* deadPlayer;
 	void* playerSanity;
 	void* playerStats;
 	void* footstepController;
 	void* journalController;
-	II::Renderer** renders;
-	bool field4;
+	II::Renderer** allRends;
+	bool isSafeGhostCursed;
 	void* playerAudio;
 	PlayerGraphics* playerGraphics;
 	void* playerSensors;
-	PlayerStamina* playerStamina;
-	float field5;
-	bool field6;
-	PhysicsCharacterController* physicsCharacterController;
-	void* audioListener;
+	PlayerStamina* stamina;
+	float movementSpeed;
+	bool monkeyPawLeaveEffectIsActive;
+	PhysicsCharacterController* charController;
+	void* listener;
 	FirstPersonController* firstPersonController;
-	void* _PCPropGrab;
-	void* dragRigidbodyUse;
-	void* _PCCanvas;
-	void* _PCCrouch;
-	void* _PCMenu;
-	void* _PCControls;
-	void* _PCFlashlight;
-	II::Animator* animator;
+	void* pcPropGrab;
+	void* dragRigidBodyUse;
+	void* pcCanvas;
+	void* pcCrouch;
+	void* pcMenu;
+	void* pcControls;
+	void* pcFlashlight;
+	II::Animator* charAnim;
 	void* playerInput;
-	void* _PCItemSway;
-	void* _PCItemSway2;
-	II::Transform* pTransform5;
-	void* xrInteractor1;
-	void* xrInteractor2;
-	II::Transform* pTransform6;
-	void* _VRMovementSettings;
-	void* _VRBelt;
-	void* _SocketInteractor1;
-	void* _SocketInteractor2;
-	void* _TrailerCamera;
-	void* _VRLoading;
+	void* itemSway;
+	void* lightSway;
+	II::Transform* deadPlayerSpawnPoint;
+	void* leftHandInteractor;
+	void* rightHandInteractor;
+	II::Transform* xrOrigin;
+	void* movementSettings;
+	void* vrBelt;
+	void* leftVRBeltDropZone;
+	void* rightVRBeltDropZone;
+	void* trailerCamera;
+	void* vrLoading;
 public:
 	II::Animator* GetAnimator() {
-        return animator;
+        return charAnim;
 	}
 
     PlayerCharacter* GetPlayerCharacter() {
@@ -79,7 +78,7 @@ public:
     }
 
     PlayerStamina* GetPlayerStamina() {
-        return playerStamina;
+        return stamina;
     }
 
     FirstPersonController* GetFirstPersonController() {
@@ -87,11 +86,11 @@ public:
     }
 
     PhysicsCharacterController* GetPhysicsCharacterController() {
-        return physicsCharacterController;
+        return charController;
     }
 
     II::Camera* GetMainCamera() {
-        return pCamera;
+        return cam;
     }
 
     II::Transform* GetPlayerTransform() {
@@ -102,12 +101,12 @@ public:
         return this->GetGameObject();
     }
 
-    II::Renderer** GetRenderer() {
-		return renders;
+    II::Renderer** GetAllRends() {
+		return allRends;
     }
 
     void* GetAudioListener() {
-		return audioListener;
+		return listener;
     }
 
     void* GetJournalController() {
@@ -119,15 +118,12 @@ public:
     }
 
     LevelRoom* GetCurrentRoom() {
-		return pRoom;
-    }
-
-    void* GetXRInteractor() {
-		return xrInteractor1;
+		return currentRoom;
     }
 
     void* GetPlayerInput() {
 		return playerInput;
     }
 };
-VALIDATE_SIZE(Player, 0x1C0 + STRUCT_STUCK);
+VALIDATE_SIZE(Player, 0x1C8 + STRUCT_STUCK);
+// 0.12.1.0 :: 0x1C0 -> 0x1C8 [+]

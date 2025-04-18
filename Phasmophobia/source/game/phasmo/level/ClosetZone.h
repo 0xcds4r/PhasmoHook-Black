@@ -1,5 +1,7 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class ClosetZone : public II::MonoBehaviour {
 public:
     enum class DoorOpenType {
@@ -8,11 +10,11 @@ public:
     };
 
     DoorOpenType doorOpenType;                         
-    void* leftClosetDoor_;             
-    void* rightClosetDoor_;             
-    void* internalAreaObstacle_; 
-    II::Transform* standOutsideEntrancePoint_; 
-    II::Transform* navSpot_;              
-    bool isClosetOccupied_ = false;                    
-    void** playersInside_;           
+    void* leftClosetDoor;
+    void* rightClosetDoor;
+    void* internalAreaObstacle;
+    II::Transform* standOutsideEntrancePoint;
+    II::Transform* navSpot;
+    bool hasChecked;
+    void** players;
 };

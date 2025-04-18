@@ -1,5 +1,7 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class GhostTraits
 {
 public:
@@ -32,17 +34,17 @@ public:
 
     GhostType ghostType;            // Offset: 0x0 
     GhostType mimicType;   // Offset: 0x4 
-    II::List<Proof>* evidenceList; // Offset: 0x8 
-    II::List<Proof>* optionalEvidenceList; // Offset: 0x10 
-    int age;         // Offset: 0x18 
-    bool bIsMale;                    // Offset: 0x1C
-    II::String* ghostName;           // Offset: 0x20 
+    II::List<Proof>* evidences; // Offset: 0x8 
+    II::List<Proof>* fullEvidences; // Offset: 0x10 
+    int ghostAge;         // Offset: 0x18 
+    bool isMale;                    // Offset: 0x1C
+    II::String* GhostName;           // Offset: 0x20 
     int ghostFirstNameID;             // Offset: 0x28 
     int ghostLastNameID;             // Offset: 0x2C 
-    bool bIsShy;               // Offset: 0x30
+    bool isShy;               // Offset: 0x30
     int deathLength;                    // Offset: 0x34
     int favouriteRoomID;                    // Offset: 0x38
-    bool hasSpecialAbility;          // Offset: 0x3C 
+    bool isWhisper;          // Offset: 0x3C 
 };
 VALIDATE_SIZE(GhostTraits, 0x40);
 
@@ -53,13 +55,13 @@ public:
     GhostAI* ghost;              // Offset: 0x68 [SerializeField]
     LevelRoom* favouriteRoom;    // Offset: 0x70 [HideInInspector]
     float activityMultiplier;            // Offset: 0x78 [HideInInspector] 
-    bool isInitialized;          // Offset: 0x7C
+    bool hasSetEvidence;          // Offset: 0x7C
 };
 VALIDATE_SIZE(GhostInfo, 0x70 + STRUCT_STUCK);
 
 class GhostAI : public II::MonoBehaviourPun {
 public:
-    enum class State : std::int64_t {
+    enum class States : std::int64_t {
         idle,
         wander,
         hunting,
@@ -86,10 +88,10 @@ public:
         ignite
     };
 
-    void* levelController;  // 0x28 - internal readonly
-    GhostAI::State state; // 0x30
+    void* stateMachine;  // 0x28 - internal readonly
+    GhostAI::States currentState; // 0x30
     GhostInfo* ghostInfo; // 0x38
-    void* navMeshAgent; // 0x40
+    void* agent; // 0x40
     void* ghostAudio;
     void* ghostInteraction;
     void* ghostActivity;
@@ -97,52 +99,53 @@ public:
     void* halloweenModel;                  // Offset: 0x68 [SerializeField]
     void* holidayModel;                    // Offset: 0x70 [SerializeField]
     void* easterModel;                     // Offset: 0x78 [SerializeField]
-    void** normalModels;                   // Offset: 0x80 (array)
-    void** specialModels;                  // Offset: 0x88 (array)
-    bool isActive;                               // Offset: 0x90
-    II::Rendering::ShadowCastingMode shadowMode;
-    II::List<II::Vector3>* waypoints; // *
-    float wanderTimer;
-    void* losSensor;
-    bool bAppear; // 0xB0 ??
-    II::Transform* headTransform;       // Offset: 0xB8
-    II::Transform* bodyTransform;       // Offset: 0xC0
-    II::Transform* feetTransform;       // Offset: 0xC8
-    float speed;                             // Offset: 0xD0 [HideInInspector]
-    float field_1;                   // Offset: 0xD4 [HideInInspector]
-    float field_2;                       // Offset: 0xD8 [HideInInspector]
-    bool field_3;                            // Offset: 0xDC [HideInInspector]
-    bool field_4;                               // Offset: 0xDD [HideInInspector]
-    II::Vector3 lastKnownPosition;      // Offset: 0xE0 [HideInInspector]
-    II::GameObject* ghostObject;        // Offset: 0xF0
-    bool canEnterHuntingMode;                              // Offset: 0xF8 [HideInInspector]
+    void** maleGhostModels;                   // Offset: 0x80 (array)
+    void** femaleGhostModels;                  // Offset: 0x88 (array)
+    bool canSwapModel;                               // Offset: 0x90
+    II::Rendering::ShadowCastingMode currrentShadowCastingMode;
+    II::List<II::Vector3>* ghostBreadcrumbs; // *
+    float breadcrumbTimer;
+    void* playerSensor;
+    bool ghostIsAppeared; // 0xB0 ??
+    II::Transform* raycastPoint;       // Offset: 0xB8
+    II::Transform* huntingRaycastPoint;       // Offset: 0xC0
+    II::Transform* feetRaycastPoint;       // Offset: 0xC8
+    float defaultSpeed;                             // Offset: 0xD0 [HideInInspector]
+    float saltSpeedMultiplier;                   // Offset: 0xD4 [HideInInspector]
+    float incenseSpeedMultiplier;                       // Offset: 0xD8 [HideInInspector]
+    float eventSpeedMultiplier; // new?
+    bool hasHuntedRecently;                            // Offset: 0xDC [HideInInspector]
+    bool removeInteractionChanceBlock;                               // Offset: 0xDD [HideInInspector]
+    II::Vector3 lastKnownHuntingLocation;      // Offset: 0xE0 [HideInInspector]
+    II::GameObject* huntingPostProcessingVolume;        // Offset: 0xF0
+    bool isDemonAbiliyHunt;                              // Offset: 0xF8 [HideInInspector]
     bool isHunting;                              // Offset: 0xF9 [HideInInspector]
-    bool bCanAttack;                          // Offset: 0xFA [HideInInspector] ??
-    bool bIncensed;                              // Offset: 0xFB [HideInInspector]
-    void* whiteSage;                        // Offset: 0x100 [HideInInspector]
-    float chaseDuration;                         // Offset: 0x108
-    bool field_8;                               // Offset: 0x10C [HideInInspector]
-    bool bCanFlash;                              // Offset: 0x10D [HideInInspector]
-    bool field_9;                           // Offset: 0x10E [HideInInspector]
+    bool isUsingLights;                          // Offset: 0xFA [HideInInspector] ??
+    bool delayedBySmudgeStick;                              // Offset: 0xFB [HideInInspector]
+    void* activeIncense;                        // Offset: 0x100 [HideInInspector]
+    float activeIncenseDuration;                         // Offset: 0x108
+    bool canWander;                               // Offset: 0x10C [HideInInspector]
+    bool canFlashAppear;                              // Offset: 0x10D [HideInInspector]
+    bool isTrapped;                           // Offset: 0x10E [HideInInspector]
     Player* bansheeTarget; // Offset: 0x110 [HideInInspector]
-    int huntCount;                               // Offset: 0x118 [HideInInspector]
-    II::Vector3 targetPosition;         // Offset: 0x11C [HideInInspector]
-    float* wanderSpeeds;                         // Offset: 0x128 (readonly массив)
-    float* chaseSpeeds;                          // Offset: 0x130 (readonly массив)
-    float* patrolTimes;                          // Offset: 0x138 (readonly массив)
-    int patrolIndex;                             // Offset: 0x140
-    int waypointIndex;                           // Offset: 0x144
-    int eventCounter;                            // Offset: 0x148
-    int flashCounter;                            // Offset: 0x14C
-    int chaseTargetIndex;                        // Offset: 0x150
-    float* eventDelays;                          // Offset: 0x158 (readonly массив)
-    float* actionTimes;                          // Offset: 0x160 (readonly массив)
-    float* huntDurations;                        // Offset: 0x168 (readonly массив)
-    float stunTimer;                             // Offset: 0x170
-    int* normalModelIndices;                     // Offset: 0x178 (readonly массив)
-    int* specialModelIndices;                    // Offset: 0x180 (readonly массив)
-    int* huntIndices;                            // Offset: 0x188 (readonly массив)
-    int* eventIndices;                           // Offset: 0x190 (readonly массив)
+    int onryoCandleBlowCounter;                               // Offset: 0x118 [HideInInspector]
+    II::Vector3 lastInteractionPoint;         // Offset: 0x11C [HideInInspector]
+    float* normalFlashValues;                         // Offset: 0x128 (readonly массив)
+    float* deogenFlashValues;                          // Offset: 0x130 (readonly массив)
+    float* oniFlashValues;                          // Offset: 0x138 (readonly массив)
+    int flashIndexValue;                             // Offset: 0x140
+    int appearIndexValue;                           // Offset: 0x144
+    int flashAmount;                            // Offset: 0x148
+    int obakeModelIndex;                            // Offset: 0x14C
+    int obakeArrayID;                        // Offset: 0x150
+    float* normalAppearValues;                          // Offset: 0x158 (readonly массив)
+    float* deogenOniAppearValues;                          // Offset: 0x160 (readonly массив)
+    float* phantomAppearValues;                        // Offset: 0x168 (readonly массив)
+    float appearTimer;                             // Offset: 0x170
+    int* obake1Values;                     // Offset: 0x178 (readonly массив)
+    int* obake2Values;                    // Offset: 0x180 (readonly массив)
+    int* obake3Values;                            // Offset: 0x188 (readonly массив)
+    int* obake4Values;                           // Offset: 0x190 (readonly массив)
 };
 VALIDATE_SIZE(GhostAI, 0x188 + STRUCT_STUCK);
 
@@ -200,30 +203,30 @@ const std::map<GhostTraits::GhostType, const char*> GhostTypeNamesRus = {
     {GhostTraits::GhostType::Thaye, "Тайе"}
 };
 
-const std::map<GhostAI::State, const char*> GhostStateNames = {
-    {GhostAI::State::idle, "Idle"},
-    {GhostAI::State::wander, "Wander"},
-    {GhostAI::State::hunting, "Hunting"},
-    {GhostAI::State::favouriteRoom, "Favourite Room"},
-    {GhostAI::State::light, "Light"},
-    {GhostAI::State::door, "Door"},
-    {GhostAI::State::throwing, "Throwing"},
-    {GhostAI::State::fusebox, "Fusebox"},
-    {GhostAI::State::appear, "Appear"},
-    {GhostAI::State::doorKnock, "Door Knock"},
-    {GhostAI::State::windowKnock, "Window Knock"},
-    {GhostAI::State::carAlarm, "Car Alarm"},
-    {GhostAI::State::flicker, "Flicker"},
-    {GhostAI::State::cctv, "CCTV"},
-    {GhostAI::State::randomEvent, "Random Event"},
-    {GhostAI::State::GhostAbility, "Ghost Ability"},
-    {GhostAI::State::mannequin, "Mannequin"},
-    {GhostAI::State::teleportObject, "Teleport Object"},
-    {GhostAI::State::interact, "Interact"},
-    {GhostAI::State::summoningCircle, "Summoning Circle"},
-    {GhostAI::State::musicBox, "Music Box"},
-    {GhostAI::State::dots, "Dots"},
-    {GhostAI::State::salt, "Salt"}
+const std::map<GhostAI::States, const char*> GhostStateNames = {
+    {GhostAI::States::idle, "Idle"},
+    {GhostAI::States::wander, "Wander"},
+    {GhostAI::States::hunting, "Hunting"},
+    {GhostAI::States::favouriteRoom, "Favourite Room"},
+    {GhostAI::States::light, "Light"},
+    {GhostAI::States::door, "Door"},
+    {GhostAI::States::throwing, "Throwing"},
+    {GhostAI::States::fusebox, "Fusebox"},
+    {GhostAI::States::appear, "Appear"},
+    {GhostAI::States::doorKnock, "Door Knock"},
+    {GhostAI::States::windowKnock, "Window Knock"},
+    {GhostAI::States::carAlarm, "Car Alarm"},
+    {GhostAI::States::flicker, "Flicker"},
+    {GhostAI::States::cctv, "CCTV"},
+    {GhostAI::States::randomEvent, "Random Event"},
+    {GhostAI::States::GhostAbility, "Ghost Ability"},
+    {GhostAI::States::mannequin, "Mannequin"},
+    {GhostAI::States::teleportObject, "Teleport Object"},
+    {GhostAI::States::interact, "Interact"},
+    {GhostAI::States::summoningCircle, "Summoning Circle"},
+    {GhostAI::States::musicBox, "Music Box"},
+    {GhostAI::States::dots, "Dots"},
+    {GhostAI::States::salt, "Salt"}
 };
 
 const std::map<EMFGhostActionEv, const char*> EMFGhostActionNames = {
@@ -698,7 +701,7 @@ int main() {
 
     ghost->Init(nullptr);
     ghost->SetGhostModel(nullptr);
-    ghost->ChangeState(GhostAI::State::wander);
+    ghost->ChangeState(GhostAI::States::wander);
 
     delete ghost;
     return 0;

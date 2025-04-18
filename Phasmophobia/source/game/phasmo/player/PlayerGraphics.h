@@ -1,16 +1,18 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class Player;
 class PlayerGraphics : II::MonoBehaviour {
 public:
     Player* player;                                    
-    void* volume;
+    void* postProcessingVolume;
     void* deadProfile;
     void* menuProfile;
     void* gameProfile;
     void* nightVisionProfile;
     void* ambientOcclusion;
-    void* customProfile;
+    void* aliveProfile;
 };
 VALIDATE_SIZE(PlayerGraphics, 0x50 + STRUCT_STUCK);
 

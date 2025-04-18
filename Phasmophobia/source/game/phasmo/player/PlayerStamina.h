@@ -1,5 +1,7 @@
 #pragma once
 
+// 0.12.1.0 [+]
+
 class Player;
 class PlayerStamina : II::MonoBehaviour {
 public:
@@ -9,21 +11,21 @@ public:
     Player* player;                                    // Offset: 0x38
     bool maleSoundsOverride;                           // Offset: 0x40
     bool femaleSoundsOverride;                         // Offset: 0x41
-    bool field_1;                // Offset: 0x42
-    bool field_2;                    // Offset: 0x43
-    bool field_3;                    // Offset: 0x44
-    bool field_4;                        // Offset: 0x45
-    bool field_5;                    // Offset: 0x46
-    bool field_6;                        // Offset: 0x47 - *
-    bool field_7;                        // Offset: 0x48
-    bool field_8;                        // Offset: 0x49
-    bool field_9;                        // Offset: 0x4A
-    bool field_10;                        // Offset: 0x4B
-    float field_11;                        // Offset: 0x4C - maybe stamina counter
+    bool isMoving;                // Offset: 0x42
+    bool canSprint;                    // Offset: 0x43
+    bool isSprinting;                    // Offset: 0x44
+    bool isWalking;                        // Offset: 0x45
+    bool draining;                    // Offset: 0x46
+    bool canDrainStamina;                        // Offset: 0x47 - *
+    bool newIsSprinting;                        // Offset: 0x48
+    bool newIsWalking;                        // Offset: 0x49
+    bool staminaDrained;                        // Offset: 0x4A
+    bool delayed;                        // Offset: 0x4B
+    float currentStaminaRecharge;                        // Offset: 0x4C - maybe stamina counter
     float currentStamina;                        // Offset: 0x50 -- * sets every 3.0 for antistamina
-    float field_13;                        // Offset: 0x54
-    void* event_1;        // Offset: 0x58
-    void* event_2;      // Offset: 0x60
+    float restoreDelay;                        // Offset: 0x54
+    void* OnStaminaDrained;        // Offset: 0x58
+    void* OnStaminaRestored;      // Offset: 0x60
 public:
     float GetCurrentStamina() {
         return this->currentStamina;
