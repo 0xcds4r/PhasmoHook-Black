@@ -2,10 +2,9 @@
 
 // 0.12.1.0 [+]
 
-class GhostTraits
+struct GhostTraits
 {
-public:
-    enum class GhostType : std::int32_t {
+    enum class GhostType : int32_t {
         Spirit,
         Wraith,
         Phantom,

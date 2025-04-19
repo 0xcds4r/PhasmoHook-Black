@@ -149,6 +149,33 @@ auto UNITY_CALLING_CONVENTION GhostAI__Update(GhostAI* _this) -> void
         Events::OnGhostAIUpdate.InvokePost(result, _this);
     }
 }
+auto UNITY_CALLING_CONVENTION Photon_Pun_PhotonView__RPC(void* _this, II::String* methodName, int32_t target, void** parameters) -> void 
+{
+    LOGD(std::format("Photon_Pun_PhotonView__RPC: {}", methodName->ToString()));
+    H::Fcall(Photon_Pun_PhotonView__RPC, _this, methodName, target, parameters);
+}
+
+// test
+auto UNITY_CALLING_CONVENTION CreateGhost(GhostController* _this) -> void {
+    H::Fcall(CreateGhost, _this);
+    LOGD("CreateGhost called hook");
+    _this->ghostTraits.ghostType = GhostTraits::GhostType::Moroi;
+    LOGD("CreateGhost called hook #1");
+    if (_this->ghost) {
+        if (_this->ghost->ghostInfo) {
+            LOGD("CreateGhost called hook #2");
+            _this->ghost->ghostInfo->ghostTraits.ghostType = GhostTraits::GhostType::Moroi;
+            _this->ghost->defaultSpeed = 700.0f;
+        }
+    }
+}
+
+auto UNITY_CALLING_CONVENTION HuntingState__CheckIfWeCanKillPlayer(Player* player, bool ignoreDistance) -> bool // test
+{
+    // god mode?
+    return false;
+    //return H::Fcall(HuntingState__CheckIfWeCanKillPlayer, player, ignoreDistance);
+}
 
 void InjectGlobal() 
 {
@@ -164,6 +191,15 @@ void InjectGlobal()
 	setupHook("Assembly-CSharp.dll", "GhostAI", "Awake", GhostAI__Awake);
 	setupHook("Assembly-CSharp.dll", "GhostAI", "Update", GhostAI__Update);
 	setupHook("Assembly-CSharp.dll", "GhostAI", "SetNewBansheeTarget", GhostAI__SetNewBansheeTarget);
+
+    //setupHook("Assembly-CSharp.dll", "HuntingState", "CheckIfWeCanKillPlayer", HuntingState__CheckIfWeCanKillPlayer); // test
+    //setupRVAHook((void*)0x762280, CreateGhost); // test
+
+    //setupHook("Assembly-CSharp.dll", "ExtensionMethods", "GetRandom", GetRandom);
+        
+    // outcoming rpcs
+    //setupHook("PhotonUnityNetworking.dll", "PhotonView", "RPC", Photon_Pun_PhotonView__RPC);
+
     //setupHook("UnityEngine.CoreModule.dll", "Random", "RandomRangeInt", RandomRangeInt); // TODO: static ghost type for single
 
 	//setupHook("Assembly-CSharp.dll", "EvidenceController", "SpawnBoneDNAEvidence", EvidenceController__SpawnBoneDNAEvidence);
@@ -174,7 +210,8 @@ void InjectGlobal()
 //setupHook("PhotonUnityNetworking.dll", "PhotonView", "OnDestroy", PhotonView__OnDestroy);
 //setupHook("Assembly-CSharp.dll", "EvidenceController", "SpawnBoneDNAEvidence", EvidenceController__SpawnBoneDNAEvidence);
 //setupHook("Assembly-CSharp.dll", "EvidenceController", "SpawnBoneDNAEvidence", EvidenceController__SpawnBoneDNAEvidence);
-//setupHook("UnityEngine.CoreModule.dll", "Random", "RandomRangeInt", RandomRangeInt);
+    //setupHook("UnityEngine.CoreModule.dll", "Random", "RandomRangeInt", RandomRangeInt);
+    // 
 }
 
 bool bOnceInjected = false;

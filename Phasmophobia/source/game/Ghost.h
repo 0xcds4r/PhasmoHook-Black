@@ -8,7 +8,7 @@ public:
 	static GhostAI::States GetState(GhostAI* _this);
 	static void* GetGhostModel(GhostAI* _this);
 	static GhostInfo* GetInfo(GhostAI* _this);
-	static const char* GetTypeNameRus();
+	//static const char* GetTypeNameRus();
 	static bool IsHunting();
 	static bool IsGhostEvent();
 	static bool IncenseEffect();
@@ -48,7 +48,8 @@ public:
 	static void SetNewBansheeTarget(Player* player);
 	static const char* GetName();
 	static GhostTraits::GhostType GetType();
-	static const char* GetTypeName();
+	static GhostTraits::GhostType GetMimicType();
+	static const char* GetTypeName(GhostTraits::GhostType type = GhostTraits::GhostType::Spirit, bool bRussianLocale = false);
 	static int GetAge();
 	static const char* GetSex();
 	static int GetFavouriteRoomID();

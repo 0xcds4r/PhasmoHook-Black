@@ -329,6 +329,39 @@
     <ClInclude Include="source\game\phasmo\item\CursedItemsController.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\GameController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\RewardManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\MainManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\JournalController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\evidence\EvidenceController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\MultiPlayerController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\LoadingController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\LobbyController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\PauseMenuController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\GameSettings.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\GhostController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="library\detours\[x64]detours.lib" />

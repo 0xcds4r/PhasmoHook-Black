@@ -2,11 +2,16 @@
 
 namespace Photon {
     namespace Realtime {
-        struct Player {
-            int32_t actorNumber;           // 0x18
-            bool isLocal;                  // 0x1C
-            II::String* nickName;          // 0x20
-            void* tagObject;               // 0x40 (object)
+        struct __declspec(align(8)) Player {
+            void* _RoomReference_k__BackingField;
+            int32_t actorNumber;           
+            bool isLocal;                  
+            bool _HasRejoined_k__BackingField;
+            II::String* nickName;          
+            II::String* _UserId_k__BackingField;
+            bool _IsInactive_k__BackingField;
+            void* _CustomProperties_k__BackingField;              
+            void* TagObject;
 
             void* GetRoomReference() const {  // Returns Room*
                 return InvokeMethod<void*>("get_RoomReference");
@@ -50,9 +55,10 @@ namespace Photon {
                             return method->Invoke<T>(this);
                         }
                     }
-                    return T();  // Default value on failure
+                    return T();  
                 }
         };
+        VALIDATE_SIZE(Player, 0x38);
     };
 
     namespace Pun 
@@ -61,9 +67,9 @@ namespace Photon {
         {
         public:
             // TODO: PhotonNetwork
-           /* static II::String* GetGameVersion() {
-                return InvokeMethod<II::String*>("get_GameVersion");
-            }*/
+            static void* GetLocalPlayer() {
+                return InvokeMethod<void*>("get_LocalPlayer");
+            }
 
             private:
                 template<typename T>
@@ -99,32 +105,35 @@ namespace Photon {
         };
 
         struct PhotonView : public II::MonoBehaviour {
-            // Fields with their offsets from the C# code
-            uint8_t group;                          // 0x20
-            int32_t prefixField;                    // 0x24
-            void* instantiationDataField;           // 0x28 (object[])
-            std::vector<void*> lastOnSerializeDataSent;  // 0x30 (List<object>)
-            std::vector<void*> syncValues;          // 0x38 (List<object>)
-            void* lastOnSerializeDataReceived;      // 0x40 (object[])
-            ViewSynchronization synchronization;    // 0x48
-            bool mixedModeIsReliable;               // 0x4C
-            OwnershipOption ownershipTransfer;      // 0x50
-            ObservableSearch observableSearch;      // 0x54
-            std::vector<void*> observedComponents;  // 0x58 (List<Component>)
-            void* rpcMonoBehaviours;                // 0x60 (MonoBehaviour[])
-            int32_t ownerActorNr;                   // 0x88
-            int32_t controllerActorNr;              // 0x8C
-            int32_t sceneViewId;                    // 0x90
-            int32_t viewIdField;                    // 0x94
-            int32_t instantiationId;                // 0x98
-            bool isRuntimeInstantiated;             // 0x9C
-            bool removedFromLocalViewList;          // 0x9D
-            void* callbackChangeQueue;              // 0xA0 (Queue<CallbackTargetChange>)
-            void* onPreNetDestroyCallbacks;         // 0xA8 (List<IOnPhotonViewPreNetDestroy>)
-            void* onOwnerChangeCallbacks;           // 0xB0 (List<IOnPhotonViewOwnerChange>)
-            void* onControllerChangeCallbacks;      // 0xB8 (List<IOnPhotonViewControllerChange>)
+            uint8_t group;                         
+            int32_t prefixField;                
+            II::List<void*>* instantiationDataField;  
+            II::List<void*>* lastOnSerializeDataSent;          
+            II::List<void*>* syncValues;   
+            II::List<void*>* lastOnSerializeDataReceived;
+            ViewSynchronization synchronization;    
+            bool mixedModeIsReliable;               
+            OwnershipOption ownershipTransfer;      
+            ObservableSearch observableSearch;     
+            II::List<void*>* observedComponents; 
+            II::List<II::MonoBehaviour*>* rpcMonoBehaviours;               
+            bool _IsMine_k__BackingField;
+            void* IsMine;
+            int32_t _CreatorActorNr_k__BackingField; 
+            bool _AmOwner_k__BackingField;
+            void* Owner;
+            int32_t ownerActorNr;
+            int32_t controllerActorNr;              
+            int32_t sceneViewId;                   
+            int32_t viewIdField;                    
+            int32_t instantiationId;                
+            bool isRuntimeInstantiated;             
+            bool removedFromLocalViewList;         
+            void* CallbackChangeQueue;              
+            void* OnPreNetDestroyCallbacks;         
+            void* OnOwnerChangeCallbacks;           
+            void* OnControllerChangeCallbacks;     
 
-            // Property-like methods using UnityResolve
             int32_t GetPrefix() const {
                 return InvokeMethod<int32_t>("get_Prefix");
             }
@@ -190,5 +199,6 @@ namespace Photon {
                 return T();  // Default value on failure
             }
         };
+        VALIDATE_SIZE(PhotonView, 0xB0 + STRUCT_STUCK);
     } // namespace Pun
 } // namespace Photon

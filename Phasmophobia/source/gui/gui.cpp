@@ -709,8 +709,8 @@ void Gui::DisplayGhostInfo()
                 const float minSpacing = 20.0f;
 
                 if (ApplicationInfo::IsEngLocale()) {
-                    DrawOutlinedText("Type: ", Ghost::GetTypeName(), ImVec2(xOffset, baseY));
-                    xOffset += ImGui::CalcTextSize("Type: ").x + ImGui::CalcTextSize(Ghost::GetTypeName()).x + minSpacing;
+                    DrawOutlinedText("Type: ", Ghost::GetTypeName(Ghost::GetType()), ImVec2(xOffset, baseY));
+                    xOffset += ImGui::CalcTextSize("Type: ").x + ImGui::CalcTextSize(Ghost::GetTypeName(Ghost::GetType())).x + minSpacing;
 
                     DrawOutlinedText("Name: ", Ghost::GetName(), ImVec2(xOffset, baseY));
                     xOffset += ImGui::CalcTextSize("Name: ").x + ImGui::CalcTextSize(Ghost::GetName()).x + minSpacing;
@@ -732,6 +732,11 @@ void Gui::DisplayGhostInfo()
                         xOffset += ImGui::CalcTextSize("Target: ").x + ImGui::CalcTextSize(Ghost::GetBansheeTargetNickname()).x + minSpacing;
                     }
 
+                    if (Ghost::GetType() == GhostTraits::GhostType::Mimic) {
+                        DrawOutlinedText("Imit: ", Ghost::GetTypeName(Ghost::GetMimicType()), ImVec2(xOffset, baseY));
+                        xOffset += ImGui::CalcTextSize("Imit: ").x + ImGui::CalcTextSize(Ghost::GetTypeName(Ghost::GetMimicType())).x + minSpacing;
+                    }
+
                     bool isHunting = Ghost::IsHunting();
                     ImU32 stateColor = isHunting ? ImColor(255, 0, 0, 255) : ImColor(255, 255, 255, 255);
                     DrawOutlinedText("State: ", isHunting ? "Hunting" : Ghost::GetStateName(), ImVec2(xOffset, baseY),
@@ -745,8 +750,8 @@ void Gui::DisplayGhostInfo()
                     DrawOutlinedText("Temp: ", tempStr.c_str(), ImVec2(xOffset, baseY));
                 }
                 else {
-                    DrawOutlinedText("Тип: ", Ghost::GetTypeNameRus(), ImVec2(xOffset, baseY));
-                    xOffset += ImGui::CalcTextSize(cp1251_to_utf8("Тип: ").c_str()).x + ImGui::CalcTextSize(Ghost::GetTypeName()).x + minSpacing;
+                    DrawOutlinedText("Тип: ", Ghost::GetTypeName(Ghost::GetType(), true), ImVec2(xOffset, baseY));
+                    xOffset += ImGui::CalcTextSize(cp1251_to_utf8("Тип: ").c_str()).x + ImGui::CalcTextSize(Ghost::GetTypeName(Ghost::GetType(), true)).x + minSpacing;
 
                     DrawOutlinedText("Имя: ", Ghost::GetName(), ImVec2(xOffset, baseY));
                     xOffset += ImGui::CalcTextSize(cp1251_to_utf8("Имя: ").c_str()).x + ImGui::CalcTextSize(Ghost::GetName()).x + minSpacing;
@@ -768,6 +773,11 @@ void Gui::DisplayGhostInfo()
                     if (Ghost::GetType() == GhostTraits::GhostType::Banshee && Ghost::GetBansheeTargetNickname()) {
                         DrawOutlinedText("Цель: ", Ghost::GetBansheeTargetNickname(), ImVec2(xOffset, baseY));
                         xOffset += ImGui::CalcTextSize(cp1251_to_utf8("Цель: ").c_str()).x + ImGui::CalcTextSize(cp1251_to_utf8(Ghost::GetBansheeTargetNickname()).c_str()).x + minSpacing;
+                    }
+
+                    if (Ghost::GetType() == GhostTraits::GhostType::Mimic) {
+                        DrawOutlinedText("Имитирует: ", Ghost::GetTypeName(Ghost::GetMimicType(), true), ImVec2(xOffset, baseY));
+                        xOffset += ImGui::CalcTextSize("Имитирует: ").x + ImGui::CalcTextSize(Ghost::GetTypeName(Ghost::GetMimicType(), true)).x + minSpacing;
                     }
 
                     bool isHunting = Ghost::IsHunting();
@@ -1021,7 +1031,10 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
     if (!Game::isOnMission) {
         ImGui::Text("You must be in game for see it :)");
     }
-    else
+    else {
+        ImGui::Text("indev..");
+    }
+    /*else
     {
         if (Ghost::GetInfo(Ghost::gCurrentGhost) && Network::GetInstance())
         {
@@ -1036,11 +1049,11 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
                         }
                     }
 
-                    //ImGui::Text("Name: %s", Players::GetNickname(pLocalPlayer));
+                    ImGui::Text("Your Name: %s", Players::GetNickname(pLocalPlayer));
                 }
             }
         }
-    }
+    }*/
 }
 
 void Gui::RenderGhostPage(const ImVec4& titleColor) 
@@ -1080,13 +1093,17 @@ void Gui::RenderGhostPage(const ImVec4& titleColor)
             if (auto* pRoom = GetGhostCurrentRoom())
             {
                 ImGui::Text("Name: %s", Ghost::GetName());
-                ImGui::Text("Type: %s", Ghost::GetTypeName());
+                ImGui::Text("Type: %s", Ghost::GetTypeName(Ghost::GetType()));
                 ImGui::Text("State: %s", Ghost::GetStateName());
                 ImGui::Text("Gender: %s", Ghost::GetSex());
                 ImGui::Text("Age: %d", Ghost::GetAge());
                 ImGui::Text("Room: %s", Room::GetRoomName(pRoom));
                 if (Ghost::GetType() == GhostTraits::GhostType::Banshee && Ghost::GetBansheeTargetNickname()) {
                     ImGui::Text("Banshee target: %s", Ghost::GetBansheeTargetNickname());
+                }
+
+                if (Ghost::GetType() == GhostTraits::GhostType::Mimic) {
+                    ImGui::Text("Mimic Type: %s", Ghost::GetTypeName(Ghost::GetMimicType()));
                 }
             }
         }
@@ -1376,7 +1393,7 @@ void Gui::RenderConsolePage(const ImVec4& titleColor) {
             else if (command == "ghostinfo") {
                 if (auto* pRoom = GetGhostCurrentRoom()) {
                     consoleLog.push_back("[GHOST] Name: " + std::string(Ghost::GetName()));
-                    consoleLog.push_back("[GHOST] Type: " + std::string(Ghost::GetTypeName()));
+                    consoleLog.push_back("[GHOST] Type: " + std::string(Ghost::GetTypeName(Ghost::GetType())));
                     consoleLog.push_back("[GHOST] State: " + std::string(Ghost::GetStateName()));
                 }
                 else {

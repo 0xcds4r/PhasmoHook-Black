@@ -95,8 +95,6 @@ GhostTraits::GhostType Ghost::GetType() {
     if (Ghost::gCurrentGhost) {
         auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
         if (pInfo) {
-           /* auto type = static_cast<GhostType>(static_cast<int>(pInfo->ghostTraits.ghostFirstNameID) + 1);
-            return type;*/
             return pInfo->ghostTraits.ghostType;
         }
     }
@@ -104,29 +102,37 @@ GhostTraits::GhostType Ghost::GetType() {
     return GhostTraits::GhostType::Spirit;
 }
 
-const char* Ghost::GetTypeName()
+GhostTraits::GhostType Ghost::GetMimicType() 
 {
     if (Ghost::gCurrentGhost) {
         auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
         if (pInfo) {
-            auto type = pInfo->ghostTraits.ghostType;
-            return GetGhostTypeString(type);
+            return pInfo->ghostTraits.mimicType;
         }
+    }
+
+    return GhostTraits::GhostType::Spirit;
+}
+
+const char* Ghost::GetTypeName(GhostTraits::GhostType type, bool bRussianLocale)
+{
+    if (Ghost::gCurrentGhost) {
+        return bRussianLocale ? GetGhostTypeStringRus(type) : GetGhostTypeString(type);
     }
     return "Loading..";
 }
 
-const char* Ghost::GetTypeNameRus()
-{
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
-        if (pInfo) {
-            auto type = pInfo->ghostTraits.ghostType;
-            return GetGhostTypeStringRus(type);
-        }
-    }
-    return "None";
-}
+//const char* Ghost::GetTypeNameRus()
+//{
+//    if (Ghost::gCurrentGhost) {
+//        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+//        if (pInfo) {
+//            auto type = pInfo->ghostTraits.ghostType;
+//            return GetGhostTypeStringRus(type);
+//        }
+//    }
+//    return "None";
+//}
 
 int Ghost::GetAge() {
     if (Ghost::gCurrentGhost) {

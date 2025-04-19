@@ -41,7 +41,7 @@ std::string Players::GetPhotonPlayerNickname(void* owner) {
 std::string Players::GetNickname(Player* player) {
     auto photonView = (Photon::Pun::PhotonView*)player->photonView;
     if (photonView) {
-        auto owner = photonView->GetOwner();
+        auto owner = (Photon::Realtime::Player*)photonView->Owner;
         if (owner && owner->GetNickName()) {
             return std::format("{}", owner->GetNickName()->ToString());
         }

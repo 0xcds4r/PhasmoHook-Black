@@ -156,6 +156,17 @@
     <ClInclude Include="source\cheat\cheats\AntiStamina.h" />
     <ClInclude Include="source\game\hooks.h" />
     <ClInclude Include="source\game\phasmo\controller\FirstPersonController.h" />
+    <ClInclude Include="source\game\phasmo\evidence\EvidenceController.h" />
+    <ClInclude Include="source\game\phasmo\game\GameController.h" />
+    <ClInclude Include="source\game\phasmo\game\GameSettings.h" />
+    <ClInclude Include="source\game\phasmo\game\GhostController.h" />
+    <ClInclude Include="source\game\phasmo\game\JournalController.h" />
+    <ClInclude Include="source\game\phasmo\game\LoadingController.h" />
+    <ClInclude Include="source\game\phasmo\game\LobbyController.h" />
+    <ClInclude Include="source\game\phasmo\game\MainManager.h" />
+    <ClInclude Include="source\game\phasmo\game\MultiPlayerController.h" />
+    <ClInclude Include="source\game\phasmo\game\PauseMenuController.h" />
+    <ClInclude Include="source\game\phasmo\game\RewardManager.h" />
     <ClInclude Include="source\game\phasmo\ghost\GhostAI.h" />
     <ClInclude Include="source\game\phasmo\item\CursedItemsController.h" />
     <ClInclude Include="source\game\phasmo\level\ClosetZone.h" />

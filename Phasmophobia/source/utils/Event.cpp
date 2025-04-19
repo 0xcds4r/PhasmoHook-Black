@@ -113,8 +113,10 @@ void Events::Initialise()
 
     OnRandomRangeInt.SubscribePre([](EventResult<int32_t>& result, int32_t minInclusive, int32_t maxExclusive)
     {
-        static bool bUseStaticGhost = true;
-        static GhostTraits::GhostType selectedGhost = GhostTraits::GhostType::Banshee;
+        //LOGD(std::format("OnRandomRangeInt -> min: {} | max: {}", minInclusive, maxExclusive));
+
+        static bool bUseStaticGhost = false;
+        static GhostTraits::GhostType selectedGhost = GhostTraits::GhostType::Mimic;
 
         if (bUseStaticGhost && minInclusive == 0 && maxExclusive == 24) {
             result.cancel = true;

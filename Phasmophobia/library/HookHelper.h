@@ -36,7 +36,7 @@ void setupHook(const char* dllName, const char* className, const char* methodNam
 template <typename HookFunc>
 void setupRVAHook(void* funcAddress, HookFunc hookFunction) {
 	try {
-		auto methodPointer = UnityResolve::AddrM(funcAddress);
+		auto methodPointer = UnityResolve::UnityType::AddrM(funcAddress);
 		if (methodPointer) {
 			//LOGD("Method address resolved -> success hooked!");
 			HookManager::InstallPtr(methodPointer, reinterpret_cast<void*>(hookFunction));
