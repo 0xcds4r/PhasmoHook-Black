@@ -11,6 +11,9 @@
 - [x] **SpeedHack**: Increases player movement speed.
 - [x] **Test Console**: Provides a test console.
 - [x] **Light Changer**: Allows modification of in-game lighting.
+- [x] **MMB Teleport**: Allow teleport by middle mouse button.
+- [x] **Easy Easter**: Renders jackapole easter and u can teleport by zero key to him.
+- [x] **SavePoints**: Page UP - for save / Page DOWN - for teleport.   
 
 # Setup
 1. Download archive [PhasmoHook.zip](https://github.com/0xcds4r/PhasmoHook-Black/releases/download/release/PhasmoHook.zip)
@@ -30,5 +33,4 @@ Some features are not yet properly implemented and are in development, they will
 - [ ] **Players Wallhack**
 - [ ] **No Clip**
 - [ ] **EasyEMF**
-- [ ] **Savepoints**
 ...
