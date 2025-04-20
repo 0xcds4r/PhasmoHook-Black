@@ -14,6 +14,7 @@
 #include "game/PauseMenuController.h"
 #include "game/JournalController.h"
 #include "level/LevelController.h"
+#include "level/ExitLevel.h"
 #include "player/Player.h"
 #include "level/MapController.h"
 #include "ghost/GhostAI.h"

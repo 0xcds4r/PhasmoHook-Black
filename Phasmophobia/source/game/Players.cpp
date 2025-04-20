@@ -2,9 +2,10 @@
 #include "../../library/PhotonHelper.h"
 #include "../gui/SkeletonESP.h"
 
+// todo: something..
+
 SkeletonESP playerESP;
 
-// нуждается в доработке
 void Players::Init()
 {
     /*try {
@@ -173,7 +174,7 @@ inline auto UNITY_CALLING_CONVENTION Players::HUpdate(Player* _this) -> void
 {
     try {
         if (Game::isOnMission && 
-            Ghost::gCurrentGhost && 
+            GhostAI::instance && 
             ApplicationInfo::bCheatEnabled[CHEAT_NOCLIP]
             && Players::GetLocalPlayer() && Players::GetLocalPlayer()->GetPlayer() == _this) 
         {

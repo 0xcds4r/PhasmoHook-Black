@@ -4,7 +4,11 @@
 #include <set>
 #include "../../library/PhotonHelper.h"
 
-// TODO: to refactoring  all
+// TODO:
+// Transfer features to CheatManager / Update / Render
+// Transfer input stuff to ...
+// Here only base render and helpers
+// Rewrite full bright by fucks shader
 
 NotificationManager notificationManager;
 
@@ -178,7 +182,7 @@ inline void DrawTextFromPosition(std::string_view text, const II::Vector3& posit
 }
 
 void ManageEMFList() {
-    if (!Ghost::gCurrentGhost || !ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA]) return;
+    if (!GhostAI::instance || !ApplicationInfo::bCheatEnabled[CHEAT_EMF_DATA]) return;
 
     auto now = std::chrono::steady_clock::now();
 
@@ -265,7 +269,7 @@ void ManageBoneEvidence()
         return;
     }
 
-    if (!Ghost::gCurrentGhost) {
+    if (!GhostAI::instance) {
         return;
     }
 
@@ -285,7 +289,7 @@ void ManageBoneEvidence()
 
 void ManageEaster()
 {
-    if (!Ghost::gCurrentGhost || !gJackalope) {
+    if (!GhostAI::instance || !gJackalope) {
         return;
     }
 
@@ -308,7 +312,7 @@ void ManageCursedItems()
         return;
     }
 
-    if (!CursedItemsController::instance || !Ghost::gCurrentGhost) {
+    if (!CursedItemsController::instance || !GhostAI::instance) {
         return;
     }
 
@@ -851,18 +855,18 @@ void DrawBoneConnectionsEx(II::Animator* pAnimator, int r = 255, int g = 255, in
 
 void Gui::ManageGhostWallhack() 
 {
-    if (!Ghost::gCurrentGhost) return;
+    if (!GhostAI::instance) return;
 
     if (ApplicationInfo::bCheatEnabled[CHEAT_GHOST_WALLHACK]) 
     {
-        FOR_EACH_COMPONENT(Ghost::gCurrentGhost, II::Animator, "UnityEngine.AnimationModule.dll", "Animator", pAnimator) 
+        FOR_EACH_COMPONENT(GhostAI::instance, II::Animator, "UnityEngine.AnimationModule.dll", "Animator", pAnimator) 
         {
             if (pAnimator) 
             {
                 bool bGhostEvent = Ghost::IsGhostEvent();
                 bool bHunt = Ghost::IsHunting();
                 bool bIncense = Ghost::IncenseEffect();
-                bool bUsingAbility = Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::States::GhostAbility;
+                bool bUsingAbility = Ghost::GetState(GhostAI::instance) == GhostAI::States::GhostAbility;
 
                 if (bGhostEvent) {
                     DrawBoneConnectionsEx(pAnimator, 0, 255, 0, 255);
@@ -914,7 +918,7 @@ void Gui::DisplayGhostInfo()
                 drawList->AddText(ImVec2(position.x + labelSize.x, position.y), textColor, cp1251_to_utf8(text).c_str());
             };
 
-        if (Ghost::GetInfo(Ghost::gCurrentGhost))
+        if (Ghost::GetInfo(GhostAI::instance))
         {
             LevelRoom* pRoom = GetGhostCurrentRoom();
             if (pRoom)
@@ -1118,7 +1122,7 @@ void Gui::DoDrawFeatures()
 {
     ManageInjectNotifies();
     
-    if (Game::isOnMission && Ghost::gCurrentGhost)
+    if (Game::isOnMission && GhostAI::instance)
     {
         ManageEMFList();
         ManageBoneEvidence();
@@ -1239,16 +1243,10 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
 
     if (ApplicationInfo::bCheatEnabled[CHEAT_PLAYERSPEED]) 
     {
-        if (auto netInstance = Network::GetInstance())
-        {
-            if (auto localPlayer = netInstance->GetLocalPlayer())
-            {
-                if (ImGui::SliderFloat("Player Speed", &ApplicationInfo::fPlayerSpeed, 0.00f, 15.00f, "%.2f")) {}
+        if (ImGui::SliderFloat("Player Speed", &ApplicationInfo::fPlayerSpeed, 0.00f, 15.00f, "%.2f")) {}
 
-                if (ImGui::Button("Reset Speed")) {
-                    ApplicationInfo::fPlayerSpeed = 1.60f;
-                }
-            }
+        if (ImGui::Button("Reset Speed")) {
+            ApplicationInfo::fPlayerSpeed = 1.60f;
         }
     }
    
@@ -1263,7 +1261,7 @@ void Gui::RenderPlayerPage(const ImVec4& titleColor) {
     }
     /*else
     {
-        if (Ghost::GetInfo(Ghost::gCurrentGhost) && Network::GetInstance())
+        if (Ghost::GetInfo(GhostAI::instance) && Network::GetInstance())
         {
             auto pLocalPlayer = Network::GetInstance()->GetLocalPlayer();
             if (pLocalPlayer) {
@@ -1315,7 +1313,7 @@ void Gui::RenderGhostPage(const ImVec4& titleColor)
     }
     else
     {
-        if (Ghost::GetInfo(Ghost::gCurrentGhost))
+        if (Ghost::GetInfo(GhostAI::instance))
         {
             if (auto* pRoom = GetGhostCurrentRoom())
             {

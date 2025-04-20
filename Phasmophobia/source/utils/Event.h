@@ -79,9 +79,18 @@ public:
     inline static Event<void*, Network*> OnNetworkStart{};
     inline static Event<void, GhostAI*> OnGhostAIAwake{};
     inline static Event<void, GhostAI*> OnGhostAIUpdate{};
+    inline static Event<void, ExitLevel*, void*> OnExitLevel{};
+	inline static Event<void, PauseMenuController*> OnPauseMenuControllerLeave{};
+	inline static Event<void, GameController*, void*> OnGameControllerExit{};
 
     static void Initialise();
     static void Uninitialise();
+    static void SetupInstances();
+    static void SetupEventNames();
+    static void SetupMissionOverEvents();
+    static void SetupPlayerEvents();
+    static void SetupGhostEvents();
+    static void ResetInstances();
 };
 
 

@@ -1,4 +1,5 @@
 #include "../main.h"
+#include "../utils/Event.h"
 
 void Game::OnMissionStart()
 {
@@ -10,9 +11,12 @@ void Game::OnMissionOver()
 {
 	LOGD("Game::OnMissionOver");
 	Game::isOnMission = false;
-	LevelController::instance = nullptr;
+	
+	Events::ResetInstances();
+	Ghost::ResetData();
+	
+	// TODO: delete after EE end
 	gJackalope = nullptr;
-	Ghost::Reset();
 }
 
 bool Game::IsSinglePlayer()

@@ -3,8 +3,7 @@
 class Ghost
 {
 public:
-	static void Init();
-	static void Reset();
+	static void ResetData();
 	static GhostAI::States GetState(GhostAI* _this);
 	static void* GetGhostModel(GhostAI* _this);
 	static GhostInfo* GetInfo(GhostAI* _this);
@@ -58,6 +57,6 @@ public:
 public:
 	static inline std::vector<std::tuple<EMF*, std::chrono::time_point<std::chrono::steady_clock>>> emfData{};
 	static inline Player* bansheeTarget = nullptr;
-	static inline GhostAI* gCurrentGhost = nullptr;
+	//static inline GhostAI* gCurrentGhost = nullptr;
 };
 

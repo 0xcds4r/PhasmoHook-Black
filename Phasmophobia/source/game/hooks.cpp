@@ -243,6 +243,33 @@ auto UNITY_CALLING_CONVENTION Jackalope__DisableJackalope(Jackalope* _this, floa
 
 #endif
 
+auto UNITY_CALLING_CONVENTION ExitLevel__Exit(ExitLevel* _this, void* pData) -> void
+{
+    EventResult<void> result;
+    if (!Events::OnExitLevel.InvokePre(result, _this, pData)) {
+        H::Fcall(ExitLevel__Exit, _this, pData);
+        Events::OnExitLevel.InvokePost(result, _this, pData);
+    }
+}
+
+auto UNITY_CALLING_CONVENTION PauseMenuController__Leave(PauseMenuController* _this) -> void
+{
+	EventResult<void> result;
+	if (!Events::OnPauseMenuControllerLeave.InvokePre(result, _this)) {
+		H::Fcall(PauseMenuController__Leave, _this);
+		Events::OnPauseMenuControllerLeave.InvokePost(result, _this);
+	}
+}
+
+auto UNITY_CALLING_CONVENTION GameController__Exit(GameController* _this, void* pData) -> void
+{
+	EventResult<void> result;
+	if (!Events::OnGameControllerExit.InvokePre(result, _this, pData)) {
+		H::Fcall(GameController__Exit, _this, pData);
+		Events::OnGameControllerExit.InvokePost(result, _this, pData);
+	}
+}
+
 void InjectGlobal() 
 {
 	LOGD("InjectGlobal");
@@ -257,6 +284,9 @@ void InjectGlobal()
 	setupHook("Assembly-CSharp.dll", "GhostAI", "Awake", GhostAI__Awake);
 	setupHook("Assembly-CSharp.dll", "GhostAI", "Update", GhostAI__Update);
 	setupHook("Assembly-CSharp.dll", "GhostAI", "SetNewBansheeTarget", GhostAI__SetNewBansheeTarget);
+    setupHook("Assembly-CSharp.dll", "ExitLevel", "Exit", ExitLevel__Exit);
+    setupHook("Assembly-CSharp.dll", "PauseMenuController", "Leave", PauseMenuController__Leave);
+    setupHook("Assembly-CSharp.dll", "GameController", "Exit", GameController__Exit);
 
 #ifdef USE_EASTER_HACKS
     //setupHook("Assembly-CSharp.dll", "Jackalope", "Awake", Jackalope__Awake);
@@ -298,7 +328,7 @@ void InjectHooks()
 
 	//Room::Init();
 	//Players::Init();
-	Ghost::Init();
+	//Ghost::Init();
 	bOnceInjected = true;
 }
 

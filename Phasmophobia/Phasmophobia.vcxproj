@@ -170,6 +170,7 @@
     <ClInclude Include="source\game\phasmo\ghost\GhostAI.h" />
     <ClInclude Include="source\game\phasmo\item\CursedItemsController.h" />
     <ClInclude Include="source\game\phasmo\level\ClosetZone.h" />
+    <ClInclude Include="source\game\phasmo\level\ExitLevel.h" />
     <ClInclude Include="source\game\phasmo\level\LevelController.h" />
     <ClInclude Include="source\game\phasmo\level\LevelRoom.h" />
     <ClInclude Include="source\game\phasmo\level\MapController.h" />

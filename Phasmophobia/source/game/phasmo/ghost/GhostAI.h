@@ -145,6 +145,8 @@ public:
     int* obake2Values;                    // Offset: 0x180 (readonly массив)
     int* obake3Values;                            // Offset: 0x188 (readonly массив)
     int* obake4Values;                           // Offset: 0x190 (readonly массив)
+public:
+    static inline GhostAI* instance = nullptr;
 };
 VALIDATE_SIZE(GhostAI, 0x188 + STRUCT_STUCK);
 

@@ -1,14 +1,9 @@
 #include "../main.h"
 #include "Game.h"
 
-void Ghost::Init()
-{
-    LOGD("Ghost::Init");
-    Ghost::Reset();
-}
+// TODO: optimize that shit
 
-void Ghost::Reset() {
-    gCurrentGhost = nullptr;
+void Ghost::ResetData() {
     bansheeTarget = nullptr;
     Ghost::emfData.clear();
 }
@@ -55,24 +50,24 @@ GhostInfo* Ghost::GetInfo(GhostAI* _this) {
 }
 
 bool Ghost::IncenseEffect() {
-    return Ghost::gCurrentGhost->delayedBySmudgeStick; // when using incense it sets to 1
+    return GhostAI::instance->delayedBySmudgeStick; // when using incense it sets to 1
 }
 
 const char* Ghost::GetBansheeTargetNickname()
 {
     if (Ghost::GetType() != GhostTraits::GhostType::Banshee) return "";
-    if (!bansheeTarget) bansheeTarget = Ghost::gCurrentGhost->bansheeTarget;
+    if (!bansheeTarget) bansheeTarget = GhostAI::instance->bansheeTarget;
     if (!bansheeTarget) return "";
 
     return Players::GetNickname(bansheeTarget).c_str();
 }
 
 bool Ghost::IsGhostEvent() {
-    return Ghost::GetState(Ghost::gCurrentGhost) == GhostAI::States::randomEvent; // new offset
+    return Ghost::GetState(GhostAI::instance) == GhostAI::States::randomEvent; // new offset
 }
 
 bool Ghost::IsHunting() {
-    return Ghost::gCurrentGhost->isHunting;
+    return GhostAI::instance->isHunting;
 }
 
 void Ghost::SetNewBansheeTarget(Player* player)
@@ -82,8 +77,8 @@ void Ghost::SetNewBansheeTarget(Player* player)
 
 const char* Ghost::GetName()
 {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo && pInfo->ghostTraits.GhostName) {
             return pInfo->ghostTraits.GhostName->ToString().c_str();
         }
@@ -92,8 +87,8 @@ const char* Ghost::GetName()
 }
 
 GhostTraits::GhostType Ghost::GetType() {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo) {
             return pInfo->ghostTraits.ghostType;
         }
@@ -104,8 +99,8 @@ GhostTraits::GhostType Ghost::GetType() {
 
 GhostTraits::GhostType Ghost::GetMimicType() 
 {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo) {
             return pInfo->ghostTraits.mimicType;
         }
@@ -116,7 +111,7 @@ GhostTraits::GhostType Ghost::GetMimicType()
 
 const char* Ghost::GetTypeName(GhostTraits::GhostType type, bool bRussianLocale)
 {
-    if (Ghost::gCurrentGhost) {
+    if (GhostAI::instance) {
         return bRussianLocale ? GetGhostTypeStringRus(type) : GetGhostTypeString(type);
     }
     return "Loading..";
@@ -124,8 +119,8 @@ const char* Ghost::GetTypeName(GhostTraits::GhostType type, bool bRussianLocale)
 
 //const char* Ghost::GetTypeNameRus()
 //{
-//    if (Ghost::gCurrentGhost) {
-//        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+//    if (GhostAI::instance) {
+//        auto pInfo = Ghost::GetInfo(GhostAI::instance);
 //        if (pInfo) {
 //            auto type = pInfo->ghostTraits.ghostType;
 //            return GetGhostTypeStringRus(type);
@@ -135,8 +130,8 @@ const char* Ghost::GetTypeName(GhostTraits::GhostType type, bool bRussianLocale)
 //}
 
 int Ghost::GetAge() {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo) {
             return pInfo->ghostTraits.ghostAge;
         }
@@ -259,8 +254,8 @@ const char* Ghost::GetDescription(bool bRussian)
 }
 
 const char* Ghost::GetSex() {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo) {
             return pInfo->ghostTraits.isMale ? "Male" : "Female";
         }
@@ -269,8 +264,8 @@ const char* Ghost::GetSex() {
 }
 
 int Ghost::GetFavouriteRoomID() {
-    if (Ghost::gCurrentGhost) {
-        auto pInfo = Ghost::GetInfo(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto pInfo = Ghost::GetInfo(GhostAI::instance);
         if (pInfo) {
             return pInfo->ghostTraits.favouriteRoomID;
         }
@@ -279,8 +274,8 @@ int Ghost::GetFavouriteRoomID() {
 }
 
 const char* Ghost::GetStateName() {
-    if (Ghost::gCurrentGhost) {
-        auto state = Ghost::GetState(Ghost::gCurrentGhost);
+    if (GhostAI::instance) {
+        auto state = Ghost::GetState(GhostAI::instance);
         return GetGhostStateString(state);
     }
     return "None";

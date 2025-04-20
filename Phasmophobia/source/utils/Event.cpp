@@ -10,8 +10,26 @@ auto GetGhostCurrentRoom() -> LevelRoom*
     return nullptr;
 }
 
-void Events::Initialise()
+void DoCollectEMFData(EMF* _this)
 {
+    if (!_this || !GhostAI::instance || !Game::isOnMission) {
+        return;
+    }
+
+    auto it = std::find_if(Ghost::emfData.begin(), Ghost::emfData.end(),
+        [_this](const auto& entry) {
+            return std::get<0>(entry) == _this;
+        });
+
+    if (it == Ghost::emfData.end()) {
+        auto now = std::chrono::steady_clock::now();
+        Ghost::emfData.push_back(std::make_tuple(_this, now));
+    }
+}
+
+void Events::SetupEventNames()
+{
+    LOGD("Events::SetupEventNames");
     OnSetNewBansheeTarget.SetName("OnSetNewBansheeTarget");
     OnLevelControllerAwake.SetName("OnLevelControllerAwake");
     OnEMFUpdate.SetName("OnEMFUpdate");
@@ -28,100 +46,22 @@ void Events::Initialise()
     OnNetworkStart.SetName("OnNetworkStart");
     OnGhostAIAwake.SetName("OnGhostAIAwake");
     OnGhostAIUpdate.SetName("OnGhostAIUpdate");
+    OnExitLevel.SetName("OnExitLevel");
+    OnGameControllerExit.SetName("OnGameControllerExit");
+    OnPauseMenuControllerLeave.SetName("OnPauseMenuControllerLeave");
+}
 
-    OnSetNewBansheeTarget.SubscribePost([](EventResult<void>& result, GhostAI* _this, Player* player)
-    {
-        if (player) {
-            Ghost::SetNewBansheeTarget(player);
-        }
-    });
-
+void Events::SetupInstances() 
+{
+    LOGD("Events::SetupInstances");
     OnLevelControllerAwake.SubscribePost([](EventResult<void>& result, LevelController* _this)
     {
         LevelController::instance = _this;
     });
 
-    OnEMFUpdate.SubscribePost([](EventResult<void>& result, EMF* _this)
-    {
-        if (!Ghost::gCurrentGhost || !Game::isOnMission) {
-            return;
-        }
-
-        auto it = std::find_if(Ghost::emfData.begin(), Ghost::emfData.end(),
-            [_this](const auto& entry) {
-                return std::get<0>(entry) == _this;
-            });
-
-        if (it == Ghost::emfData.end()) {
-            auto now = std::chrono::steady_clock::now();
-            Ghost::emfData.push_back(std::make_tuple(_this, now));
-        }
-    });
-
     OnCursedItemsControllerStart.SubscribePost([](EventResult<void>& result, CursedItemsController* _this)
     {
         CursedItemsController::instance = _this;
-    });
-
-    OnPlayerStaminaUpdate.SubscribePre([](EventResult<void>& result, PlayerStamina* _this)
-    {
-        if (_this && ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA])
-        {
-            if (_this->GetCurrentStamina() != 3.0f) {
-                _this->SetCurrentStamina(3.0f);
-            }
-        }
-    });
-
-    OnMainManagerAwake.SubscribePre([](EventResult<void>& result, void* _this)
-    {
-        Game::OnMissionOver();
-    });
-
-    OnSpawnBoneDNAEvidence.SubscribePost([](EventResult<void>& result, EvidenceController* _this, LevelRoom* roomOpt)
-    {
-        
-    });
-
-    OnPhotonViewAwake.SubscribePost([](EventResult<void>& result, Photon::Pun::PhotonView* _this)
-    {
-        if (_this)
-        {
-            if (auto owner = _this->GetOwner())
-            {
-                Game::bPhotonAwaken = true;
-            }
-        }
-    });
-
-    OnPhotonViewOnDestroy.SubscribePre([](EventResult<void>& result, Photon::Pun::PhotonView* _this)
-    {
-        Game::bPhotonAwaken = false;
-    });
-
-    OnPlayerTeleport.SubscribePre([](EventResult<void>& result, Player* _this, II::Vector3 pos)
-    {
-        if (ApplicationInfo::bCheatEnabled[CHEAT_NOCLIP]) {
-            result.cancel = true;
-        }
-    });
-
-    OnPlayerToggleFreezePlayer.SubscribePost([](EventResult<void>& result, Player* _this, bool state)
-    {
-        
-    });
-
-    OnRandomRangeInt.SubscribePre([](EventResult<int32_t>& result, int32_t minInclusive, int32_t maxExclusive)
-    {
-        //LOGD(std::format("OnRandomRangeInt -> min: {} | max: {}", minInclusive, maxExclusive));
-
-        static bool bUseStaticGhost = false;
-        static GhostTraits::GhostType selectedGhost = GhostTraits::GhostType::Mimic;
-
-        if (bUseStaticGhost && minInclusive == 0 && maxExclusive == 24) {
-            result.cancel = true;
-            result.returnValue = static_cast<int32_t>(selectedGhost);
-        }
     });
 
     OnMapControllerStart.SubscribePost([](EventResult<void>& result, MapController* _this)
@@ -133,21 +73,123 @@ void Events::Initialise()
     {
         Network::instance = _this;
     });
+}
+
+void Events::ResetInstances() {
+    LOGD("Events::ResetInstances");
+	LevelController::instance = nullptr;
+	CursedItemsController::instance = nullptr;
+	MapController::instance = nullptr;
+	//Network::instance = nullptr;
+    GhostAI::instance = nullptr;
+}
+
+void Events::SetupMissionOverEvents()
+{
+    LOGD("Events::SetupMissionOverEvents");
+
+    OnMainManagerAwake.SubscribePre([](EventResult<void>& result, void* _this)
+    {
+        Game::OnMissionOver();
+    });
+
+    OnExitLevel.SubscribePre([](EventResult<void>& result, ExitLevel* _this, void* pData)
+    {
+        //LOGD("OnExitLevel PRE");
+    });
+
+    OnExitLevel.SubscribePost([](EventResult<void>& result, ExitLevel* _this, void* pData)
+    {
+        //LOGD("OnExitLevel POST");
+        Game::OnMissionOver();
+    });
+
+    OnGameControllerExit.SubscribePre([](EventResult<void>& result, GameController* _this, void* pData)
+    {
+        //LOGD("OnGameControllerExit PRE");
+    });
+
+    OnGameControllerExit.SubscribePost([](EventResult<void>& result, GameController* _this, void* pData)
+    {
+        //LOGD("OnGameControllerExit Post");
+        Game::OnMissionOver();
+    });
+
+    OnPauseMenuControllerLeave.SubscribePre([](EventResult<void>& result, PauseMenuController* _this)
+    {
+        //LOGD("OnPauseMenuControllerLeave PRE");
+    });
+
+    OnPauseMenuControllerLeave.SubscribePost([](EventResult<void>& result, PauseMenuController* _this)
+    {
+        //LOGD("OnPauseControllerLeave POST");
+        Game::OnMissionOver();
+    });
+}
+
+void Events::SetupPlayerEvents() 
+{
+    LOGD("Events::SetupPlayerEvents");
+
+    OnPlayerStaminaUpdate.SubscribePre([](EventResult<void>& result, PlayerStamina* _this)
+    {
+        if (_this && ApplicationInfo::bCheatEnabled[CHEAT_PLAYER_ANTISTAMINA])
+        {
+            if (_this->GetCurrentStamina() != 3.0f) {
+                _this->SetCurrentStamina(3.0f);
+            }
+        }
+    });
+
+    OnPlayerTeleport.SubscribePre([](EventResult<void>& result, Player* _this, II::Vector3 pos)
+    {
+        if (ApplicationInfo::bCheatEnabled[CHEAT_NOCLIP]) {
+            result.cancel = true;
+        }
+    });
+}
+
+void Events::SetupGhostEvents() {
+    LOGD("Events::SetupGhostEvents");
 
     OnGhostAIAwake.SubscribePost([](EventResult<void>& result, GhostAI* _this)
     {
-        Ghost::gCurrentGhost = _this;
+        GhostAI::instance = _this;
         Game::OnMissionStart();
     });
 
     OnGhostAIUpdate.SubscribePost([](EventResult<void>& result, GhostAI* _this)
     {
-        
+        GhostAI::instance = _this;
     });
+
+    OnSetNewBansheeTarget.SubscribePost([](EventResult<void>& result, GhostAI* _this, Player* player)
+    {
+        if (player) {
+            Ghost::SetNewBansheeTarget(player);
+        }
+    });
+
+    OnEMFUpdate.SubscribePost([](EventResult<void>& result, EMF* _this)
+    {
+        DoCollectEMFData(_this);
+    });
+}
+
+void Events::Initialise()
+{
+	LOGD("Initialise Events..");
+    SetupEventNames();
+    SetupInstances();
+    SetupMissionOverEvents();
+    SetupPlayerEvents();
+    SetupGhostEvents();
 }
 
 void Events::Uninitialise()
 {
+	LOGD("Uninitialise Events..");
+
     OnSetNewBansheeTarget.Clear();
     OnLevelControllerAwake.Clear();
     OnEMFUpdate.Clear();
@@ -164,4 +206,7 @@ void Events::Uninitialise()
     OnNetworkStart.Clear();
     OnGhostAIAwake.Clear();
     OnGhostAIUpdate.Clear();
+    OnExitLevel.Clear();
+	OnGameControllerExit.Clear();
+	OnPauseMenuControllerLeave.Clear();
 }
