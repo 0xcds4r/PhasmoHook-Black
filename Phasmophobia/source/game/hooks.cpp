@@ -170,12 +170,78 @@ auto UNITY_CALLING_CONVENTION CreateGhost(GhostController* _this) -> void {
     }
 }
 
-auto UNITY_CALLING_CONVENTION HuntingState__CheckIfWeCanKillPlayer(Player* player, bool ignoreDistance) -> bool // test
+auto UNITY_CALLING_CONVENTION HuntingState__CanHunt(void* thiz) -> bool // test
 {
-    // god mode?
     return false;
     //return H::Fcall(HuntingState__CheckIfWeCanKillPlayer, player, ignoreDistance);
 }
+
+
+#define USE_EASTER_HACKS
+II::GameObject* gJackalope = nullptr;
+
+#ifdef USE_EASTER_HACKS
+struct Jackalope : public II::MonoBehaviourPun
+{
+    void* jackalopeDotsSignal;
+    void* audioSource;
+    void* eventItem;
+    int32_t attackChance;
+    int32_t runAwayChance;
+    int32_t attackSanityChange;
+    int32_t runAwaySanityChange;
+    II::List<void*>* attackClip;
+    II::List<void*>* runAwayClip;
+    II::List<void*>* triggerHuntClip;
+    II::String* attackAnimTrigger;
+    II::String* runAwayAnimTrigger;
+    II::String* huntAnimTrigger;
+    float jackalopeAttackSpeed;
+    float jackalopeRunAwaySpeed;
+    float completionDelay;
+    float runAwayDirectionAvoidTargetAngle;
+    float runAwayGhostSpeedModifier;
+    float disappearJackalopeAttackTime;
+    float disappearJackalopeRunAwayTime;
+    float disappearJackalopeTriggerHuntTime;
+    float jackalopeDetectionTime;
+    bool dropHeldItemsOnAttack;
+    float forwardAxisCorrection;
+    bool updateTransforms;
+    bool eventComplete;
+    float jackalopeDetectionTimeAccum;
+    float jackalopeSpeed;
+};
+VALIDATE_SIZE(Jackalope, 0xA8 + STRUCT_STUCK);
+
+auto UNITY_CALLING_CONVENTION Jackalope__Awake(Jackalope* _this) -> void // test
+{
+    H::Fcall(Jackalope__Awake, _this);
+    gJackalope = _this->GetGameObject();
+    LOGD("jackalope spawned");
+}
+
+auto UNITY_CALLING_CONVENTION Jackalope__Update(Jackalope* _this) -> void // test
+{
+    H::Fcall(Jackalope__Update, _this);
+
+    if (_this->eventComplete) {
+        //LOGD("easter event completed");
+        gJackalope = nullptr;
+        return;
+    }
+
+    gJackalope = _this->GetGameObject();
+}
+
+auto UNITY_CALLING_CONVENTION Jackalope__DisableJackalope(Jackalope* _this, float time) -> void // test
+{
+    H::Fcall(Jackalope__DisableJackalope, _this, time);
+    gJackalope = nullptr;
+    LOGD("jackalope destroyed");
+}
+
+#endif
 
 void InjectGlobal() 
 {
@@ -192,7 +258,15 @@ void InjectGlobal()
 	setupHook("Assembly-CSharp.dll", "GhostAI", "Update", GhostAI__Update);
 	setupHook("Assembly-CSharp.dll", "GhostAI", "SetNewBansheeTarget", GhostAI__SetNewBansheeTarget);
 
-    //setupHook("Assembly-CSharp.dll", "HuntingState", "CheckIfWeCanKillPlayer", HuntingState__CheckIfWeCanKillPlayer); // test
+#ifdef USE_EASTER_HACKS
+    //setupHook("Assembly-CSharp.dll", "Jackalope", "Awake", Jackalope__Awake);
+    setupHook("Assembly-CSharp.dll", "Jackalope", "Update", Jackalope__Update);
+    //setupHook("Assembly-CSharp.dll", "Jackalope", "DisableJackalope", Jackalope__DisableJackalope);
+    // 
+
+#endif
+
+    //setupHook("Assembly-CSharp.dll", "HuntingState", "CanHunt", HuntingState__CanHunt); // test
     //setupRVAHook((void*)0x762280, CreateGhost); // test
 
     //setupHook("Assembly-CSharp.dll", "ExtensionMethods", "GetRandom", GetRandom);

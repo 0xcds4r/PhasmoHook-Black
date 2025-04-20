@@ -5,12 +5,13 @@ void Game::OnMissionStart()
 	LOGD("Game::OnMissionStart");
 	Game::isOnMission = true;
 }
-
+extern II::GameObject* gJackalope;
 void Game::OnMissionOver()
 {
 	LOGD("Game::OnMissionOver");
 	Game::isOnMission = false;
 	LevelController::instance = nullptr;
+	gJackalope = nullptr;
 	Ghost::Reset();
 }
 

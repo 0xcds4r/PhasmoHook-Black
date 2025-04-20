@@ -4,8 +4,76 @@
 #include <set>
 #include "../../library/PhotonHelper.h"
 
-// TODO: to refactoring
+// TODO: to refactoring  all
+
 NotificationManager notificationManager;
+
+extern II::GameObject* gJackalope;
+static II::Vector3 vecBindPos{};
+static bool bTeleportMode = false; 
+static II::Vector3 teleportTargetPos{}; 
+static const float maxTeleportDistance = 120.0f; 
+
+bool GetWorldPositionFromCrosshair(II::Vector3& outPos) 
+{
+    if (auto* camera = II::Camera::GetMain()) {
+        II::Vector2 crosshairPos(ApplicationInfo::screenWidth / 2.0f, ApplicationInfo::screenHeight / 2.0f);
+
+        II::Ray ray = camera->ScreenPointToRay(II::Vector2(crosshairPos.x, crosshairPos.y));
+        UnityResolve::UnityType::RaycastHit hitInfo;
+
+        if (UnityResolve::UnityType::Physics::Raycast(ray, &hitInfo, maxTeleportDistance)) {
+            outPos = hitInfo.m_Point;
+            return true;
+        }
+    }
+    return false;
+}
+
+inline void DrawTextFromPosition(std::string_view text, const II::Vector3& position);
+void DrawTeleportIndicator(const II::Vector3& position) 
+{
+    if (auto* camera = II::Camera::GetMain()) 
+    {
+        float offsetY = 0.1f; 
+        float size = 0.5f;
+
+        float height = (sqrt(3.0f) / 2.0f) * size; 
+
+        II::Vector3 v1(position.x - size, position.y + offsetY, position.z - height / 2.0f); 
+        II::Vector3 v2(position.x + size, position.y + offsetY, position.z - height / 2.0f);
+        II::Vector3 v3(position.x, position.y + offsetY, position.z + height / 2.0f);       
+
+        auto p1 = camera->WorldToScreenPoint(v1, UnityResolve::UnityType::Camera::Eye::Mono);
+        auto p2 = camera->WorldToScreenPoint(v2, UnityResolve::UnityType::Camera::Eye::Mono);
+        auto p3 = camera->WorldToScreenPoint(v3, UnityResolve::UnityType::Camera::Eye::Mono);
+
+        if (p1.z > 0 && p2.z > 0 && p3.z > 0) {
+            p1.y = ApplicationInfo::screenHeight - p1.y;
+            p2.y = ApplicationInfo::screenHeight - p2.y;
+            p3.y = ApplicationInfo::screenHeight - p3.y;
+
+            ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+            drawList->AddTriangleFilled(
+                ImVec2(p1.x, p1.y),
+                ImVec2(p2.x, p2.y),
+                ImVec2(p3.x, p3.y),
+                IM_COL32(0, 255, 0, 128) 
+            );
+
+            drawList->AddTriangle(
+                ImVec2(p1.x, p1.y),
+                ImVec2(p2.x, p2.y),
+                ImVec2(p3.x, p3.y),
+                IM_COL32(255, 255, 255, 255), 
+                1.0f
+            );
+
+            II::Vector3 labelPos(position.x, position.y + 0.5f, position.z);
+            DrawTextFromPosition("Teleport Target", labelPos);
+        }
+    }
+}
 
 ImVec4 HexToRGBA(const std::string& hex) {
     int r, g, b, a;
@@ -215,6 +283,25 @@ void ManageBoneEvidence()
     }
 }
 
+void ManageEaster()
+{
+    if (!Ghost::gCurrentGhost || !gJackalope) {
+        return;
+    }
+
+    // working at all (SP, MP)
+    if (gJackalope)
+    {
+        if (auto* transform = gJackalope->GetTransform()) {
+            try {
+                DrawTextFromPosition("jackalope", transform->GetPosition());
+            }
+            catch (const std::exception& e) {}
+            catch (...) {}
+        }
+    }
+}
+
 void ManageCursedItems()
 {
     if (!ApplicationInfo::bCheatEnabled[CHEAT_CURSED_ITEMS_SHOW]) {
@@ -330,6 +417,74 @@ char Gui::ProcessInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 UpdateCursorClip();
                 return 1;
             }
+            else if (wParam == 0x30) // key 0
+            {
+                if (ApplicationInfo::bMenuActive) {
+                    break;
+                }
+
+                if (gJackalope && gJackalope->GetTransform()) {
+                    AddNotify("Goto Jackalope",
+                        "Success",
+                        3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+
+                    auto player = UnityResolve::UnityType::GameObject::Find("PCPlayer(Clone)");
+                    if (player) {
+                        if (player->GetTransform()) {
+                            II::Vector3 jaPos = gJackalope->GetTransform()->GetPosition();
+                            jaPos.y += 0.25f;
+                            player->GetTransform()->SetPosition(jaPos);
+                        }
+                    }
+                }
+                else {
+                    AddNotify("Goto Jackalope",
+                        "Jackalope not found!",
+                        3.5f, COLOR_WHITE, COLOR_RED_HOVER);
+                }
+
+                return 1;
+            }
+            else if (wParam == VK_PRIOR) // Page Up
+            {
+                if (ApplicationInfo::bMenuActive) {
+                    break;
+                }
+
+                auto player = UnityResolve::UnityType::GameObject::Find("PCPlayer(Clone)");
+                if (player) {
+                    vecBindPos = { player->GetTransform()->GetPosition().x, player->GetTransform()->GetPosition().y, player->GetTransform()->GetPosition().z };
+                    AddNotify("Pos binded",
+                        "(XYZ: " + std::to_string(vecBindPos.x) + ", " + std::to_string(vecBindPos.y) + ", " + std::to_string(vecBindPos.z) + ")",
+                        3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+                }
+               
+                return 1;
+            }
+            else if (wParam == VK_NEXT) // Page Down
+            {
+                if (ApplicationInfo::bMenuActive) {
+                    break;
+                }
+
+                if (vecBindPos.isZero()) {
+                    AddNotify("Goto binded pos",
+                        "Failed: not set",
+                        3.5f, COLOR_WHITE, COLOR_RED_HOVER);
+                    break;
+                }
+
+                auto player = UnityResolve::UnityType::GameObject::Find("PCPlayer(Clone)");
+                if (player) {
+                    if (player->GetTransform()) {
+                        AddNotify("Goto binded pos",
+                            "Success",
+                            3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+                        player->GetTransform()->SetPosition(vecBindPos);
+                    }
+                }
+                return 1;
+            }
 
             else if (auto it = hotkeys.find(wParam); it != hotkeys.end()) 
             {
@@ -357,6 +512,65 @@ char Gui::ProcessInput(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 return 1;
             }
             break;
+        }
+
+        case WM_MBUTTONDOWN:
+        {
+            if (ApplicationInfo::bMenuActive) {
+                break;
+            }
+
+            if (!Game::isOnMission) {
+                break;
+            }
+
+            bTeleportMode = !bTeleportMode;
+            if (bTeleportMode) {
+                if (GetWorldPositionFromCrosshair(teleportTargetPos)) {
+                    AddNotify("Teleport Mode",
+                        "Enabled: Click LMB to teleport, MMB to cancel",
+                        3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+                }
+                else {
+                    AddNotify("Teleport Mode",
+                        "Enabled: No valid target found yet",
+                        3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+                }
+            }
+            else {
+                AddNotify("Teleport Mode",
+                    "Disabled",
+                    3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+            }
+            return 1;
+        }
+
+        case WM_LBUTTONDOWN: 
+        {
+            if (ApplicationInfo::bMenuActive || !bTeleportMode) {
+                break;
+            }
+
+            if (!Game::isOnMission) {
+                break;
+            }
+
+            auto player = UnityResolve::UnityType::GameObject::Find("PCPlayer(Clone)");
+            if (player && player->GetTransform()) {
+                teleportTargetPos.y += 0.65f; 
+                player->GetTransform()->SetPosition(teleportTargetPos);
+                AddNotify("Teleport",
+                    "Success: Teleported to target",
+                    3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+            }
+            else {
+                AddNotify("Teleport",
+                    "Failed: Player not found",
+                    3.5f, COLOR_WHITE, COLOR_RED_HOVER);
+            }
+
+            bTeleportMode = false;
+            return 1;
         }
 
         case WM_CLOSE:
@@ -913,6 +1127,19 @@ void Gui::DoDrawFeatures()
         DisplayGhostInfo();
         ManageCursedItems();
         ManageNoclip();
+        ManageEaster();
+
+        if (bTeleportMode) {
+            if (GetWorldPositionFromCrosshair(teleportTargetPos)) {
+                DrawTeleportIndicator(teleportTargetPos);
+            }
+            else {
+                //bTeleportMode = false;
+                /*AddNotify("Teleport Mode",
+                    "Disabled: No valid target found",
+                    3.5f, COLOR_WHITE, COLOR_RED_HOVER);*/
+            }
+        }
     }
 
     ManagePlayersWallhack();
@@ -1221,7 +1448,7 @@ void Gui::RenderConsolePage(const ImVec4& titleColor) {
     }
     ImGui::EndChild();
 
-    static II::Vector3 vecBindPos{};
+    
 
     ImGui::Separator();
     bool reclaimFocus = false;
