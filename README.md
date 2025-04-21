@@ -14,6 +14,7 @@
 - [x] **MMB Teleport**: Allow teleport by middle mouse button.
 - [x] **Easy Easter**: Renders jackapole easter and u can teleport by zero key to him.
 - [x] **SavePoints**: Page UP - for save / Page DOWN - for teleport.   
+- [x] **Max Reward**: Auto-complete all missions.
 
 # Setup
 1. Download archive [PhasmoHook.zip](https://github.com/0xcds4r/PhasmoHook-Black/releases/download/release/PhasmoHook.zip)
