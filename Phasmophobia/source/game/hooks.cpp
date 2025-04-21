@@ -270,6 +270,69 @@ auto UNITY_CALLING_CONVENTION GameController__Exit(GameController* _this, void* 
 	}
 }
 
+auto UNITY_CALLING_CONVENTION ObjectiveManager__Start(ObjectiveManager* _this) -> void
+{
+	EventResult<void> result;
+	if (!Events::OnObjectiveManagerStart.InvokePre(result, _this)) {
+		H::Fcall(ObjectiveManager__Start, _this);
+		Events::OnObjectiveManagerStart.InvokePost(result, _this);
+	}
+}
+
+// Dangerous way
+struct LevelValues : public II::MonoBehaviour
+{
+    bool stayInServerRoom;
+    bool inGame;
+    bool setupPhase;
+    bool isTutorial;
+    bool isPublicServer;
+    int32_t maxRoomPlayers;
+    int32_t smallMapIndex;
+    int32_t mapEventType;
+    void* currentDifficulty;
+    void* previousDifficulty;
+    void* _map;
+    Objective* mainObjective;
+    II::List<Objective*>* sideObjectives;
+    Objective* dnaObjective;
+    II::List<void*>* allPhotos;
+    int32_t eventItemsCollected;
+    II::List<void*>* equipmentLoadout;
+    void* currentWeather;
+    bool isMenuMusicMuted;
+    void* OnGraphicsSettingsChanged;
+
+    auto GetSideObjectives() {
+        return sideObjectives->ToArray()->ToVector();
+    }
+};
+VALIDATE_SIZE(LevelValues, 0x88 + STRUCT_STUCK);
+
+auto UNITY_CALLING_CONVENTION LevelValues__IsPerfectGame(LevelValues* _this) -> bool
+{
+    LOGD("LevelValues__IsPerfectGame");
+    _this->mainObjective->completed = true;
+	for (auto objective : _this->GetSideObjectives()) {
+		if (objective) {
+			objective->completed = true;
+		}
+	}
+    _this->dnaObjective->completed = true;
+    return true;
+    //return H::Fcall(LevelValues__IsPerfectGame, _this);
+}
+// ----------
+
+
+auto UNITY_CALLING_CONVENTION ObjectiveManager__AddSideObjective(ObjectiveManager* _this, Objective* objective, int32_t id) -> void
+{
+	EventResult<void> result;
+	if (!Events::OnAddSideObjective.InvokePre(result, _this, objective, id)) {
+		H::Fcall(ObjectiveManager__AddSideObjective, _this, objective, id);
+		Events::OnAddSideObjective.InvokePost(result, _this, objective, id);
+	}
+}
 void InjectGlobal() 
 {
 	LOGD("InjectGlobal");
@@ -287,6 +350,15 @@ void InjectGlobal()
     setupHook("Assembly-CSharp.dll", "ExitLevel", "Exit", ExitLevel__Exit);
     setupHook("Assembly-CSharp.dll", "PauseMenuController", "Leave", PauseMenuController__Leave);
     setupHook("Assembly-CSharp.dll", "GameController", "Exit", GameController__Exit);
+
+    setupHook("Assembly-CSharp.dll", "ObjectiveManager", "Start", ObjectiveManager__Start);
+    // ObjectiveManager__AddSideObjective
+    //setupHook("Assembly-CSharp.dll", "ObjectiveManager", "AddSideObjective", ObjectiveManager__AddSideObjective);
+
+    // 
+    // dangerous way
+    //setupHook("Assembly-CSharp.dll", "LevelValues", "IsPerfectGame", LevelValues__IsPerfectGame);
+    // LevelValues$$IsPerfectGame
 
 #ifdef USE_EASTER_HACKS
     //setupHook("Assembly-CSharp.dll", "Jackalope", "Awake", Jackalope__Awake);

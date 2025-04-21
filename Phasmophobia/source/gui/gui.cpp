@@ -1155,8 +1155,8 @@ void Gui::DoDrawFeatures()
 void Gui::RenderSideBar() 
 {
     static constexpr float buttonHeight = 45.0f;
-    static const std::array<std::pair<const char*, int>, 4> buttons = { {
-        {"Player", 0}, {"Ghost", 1}, {"Preferences", 2}, {"Console", 3}
+    static const std::array<std::pair<const char*, int>, 5> buttons = { {
+		{"Player", 0}, {"Ghost", 1}, {"Preferences", 2}, {"Console", 3}, {"Reward", 4}
     } };
 
     ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.5f)); 
@@ -1186,6 +1186,24 @@ void Gui::RenderSideBar()
     ImGui::PopStyleVar(2);
 }
 
+void Gui::RenderRewardPage(const ImVec4& titleColor) {
+    ImGui::TextColored(titleColor, "Reward");
+    ImGui::Separator();
+
+    if (ImGui::Checkbox("Complete all objectives", &ApplicationInfo::bCheatEnabled[CHEAT_MAXREWARD])) 
+    {
+        AddNotify("Complete all objectives",
+            ApplicationInfo::bCheatEnabled[CHEAT_MAXREWARD] ? "Toggle: Enabled" : "Toggle: Disabled",
+            3.5f, COLOR_WHITE, COLOR_BLUE_HOVER);
+
+        if (ApplicationInfo::bCheatEnabled[CHEAT_MAXREWARD] && Game::isOnMission) {
+            if (ObjectiveManager::instance) {
+                ObjectiveManager::instance->CompleteAllObjectives();
+            }
+        }
+    }
+}
+
 void Gui::RenderMainContent() {
     static const ImVec4 titleColor(0.7f, 0.9f, 0.7f, 1.0f);
 
@@ -1204,6 +1222,10 @@ void Gui::RenderMainContent() {
 
     case 3: // Console
         RenderConsolePage(titleColor);
+        break;
+
+    case 4: // Reward
+        RenderRewardPage(titleColor);
         break;
     }
 }

@@ -20,6 +20,7 @@ ImVec4 HexToRGBA(const std::string& hex);
 #define CHEAT_NOCLIP 12
 #define CHEAT_NOHUNTING 13
 #define CHEAT_PLAYERSPEED 14
+#define CHEAT_MAXREWARD 15
 
 #define COLOR_WHITE          HexToRGBA("FFFFFFFF")
 #define COLOR_DARK_BLUE      HexToRGBA("1A1A3DFF")  
@@ -73,6 +74,7 @@ private:
     void DoDrawFeatures();
     void RenderSideBar();
     void RenderMainContent();
+    void RenderRewardPage(const ImVec4& titleColor);
     void RenderPlayerPage(const ImVec4& titleColor);
     void RenderGhostPage(const ImVec4& titleColor);
     void RenderPreferencesPage(const ImVec4& titleColor);

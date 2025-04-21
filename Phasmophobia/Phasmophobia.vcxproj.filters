@@ -365,6 +365,9 @@
     <ClInclude Include="source\game\phasmo\level\ExitLevel.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="source\game\phasmo\game\ObjectiveManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="library\detours\[x64]detours.lib" />

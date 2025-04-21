@@ -10,6 +10,7 @@
 #include "game/MultiPlayerController.h"
 #include "game/GameController.h"
 #include "game/RewardManager.h"
+#include "game/ObjectiveManager.h"
 #include "game/MainManager.h"
 #include "game/PauseMenuController.h"
 #include "game/JournalController.h"

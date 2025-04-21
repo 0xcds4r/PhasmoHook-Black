@@ -1,6 +1,6 @@
 #include "../main.h"
 #include "Event.h"
-
+#include <format>
 auto GetGhostCurrentRoom() -> LevelRoom* 
 {
     if (LevelController::instance && Game::isOnMission) {
@@ -49,6 +49,8 @@ void Events::SetupEventNames()
     OnExitLevel.SetName("OnExitLevel");
     OnGameControllerExit.SetName("OnGameControllerExit");
     OnPauseMenuControllerLeave.SetName("OnPauseMenuControllerLeave");
+	OnObjectiveManagerStart.SetName("OnObjectiveManagerStart");
+	OnAddSideObjective.SetName("OnAddSideObjective");
 }
 
 void Events::SetupInstances() 
@@ -73,6 +75,25 @@ void Events::SetupInstances()
     {
         Network::instance = _this;
     });
+
+	OnObjectiveManagerStart.SubscribePost([](EventResult<void>& result, ObjectiveManager* _this)
+	{
+		ObjectiveManager::instance = _this;
+
+        if (ApplicationInfo::bCheatEnabled[CHEAT_MAXREWARD]) {
+            if(_this) 
+                _this->CompleteAllObjectives();
+        }
+	});
+
+	OnAddSideObjective.SubscribePost([](EventResult<void>& result, ObjectiveManager* _this, Objective* objective, int32_t id)
+	{
+            LOGD("OnAddSideObjective");
+		//if (ApplicationInfo::bCheatEnabled[CHEAT_MAXREWARD]) {
+			//LOGD(std::format("Events::OnAddSideObjective -> {} (Completed success!)", objective->name->ToString()));
+			//objective->completed = true;
+		//}
+	});
 }
 
 void Events::ResetInstances() {
@@ -82,6 +103,7 @@ void Events::ResetInstances() {
 	MapController::instance = nullptr;
 	//Network::instance = nullptr;
     GhostAI::instance = nullptr;
+	ObjectiveManager::instance = nullptr;
 }
 
 void Events::SetupMissionOverEvents()
@@ -209,4 +231,6 @@ void Events::Uninitialise()
     OnExitLevel.Clear();
 	OnGameControllerExit.Clear();
 	OnPauseMenuControllerLeave.Clear();
+	OnObjectiveManagerStart.Clear();
+    OnAddSideObjective.Clear();
 }

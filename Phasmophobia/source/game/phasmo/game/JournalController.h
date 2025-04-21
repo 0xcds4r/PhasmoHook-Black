@@ -14,6 +14,8 @@ class Player;
 
 class JournalController : public II::MonoBehaviour {
 public:
+    static inline JournalController* instance = nullptr;
+public:
     void* pauseMenuController;
     void* playerList;
     II::GameObject* content;

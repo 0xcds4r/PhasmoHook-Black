@@ -82,6 +82,8 @@ public:
     inline static Event<void, ExitLevel*, void*> OnExitLevel{};
 	inline static Event<void, PauseMenuController*> OnPauseMenuControllerLeave{};
 	inline static Event<void, GameController*, void*> OnGameControllerExit{};
+	inline static Event<void, ObjectiveManager*> OnObjectiveManagerStart{};
+	inline static Event<void, ObjectiveManager*, Objective*, int32_t> OnAddSideObjective{};
 
     static void Initialise();
     static void Uninitialise();
